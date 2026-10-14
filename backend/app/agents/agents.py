@@ -6,6 +6,7 @@ private context — the prosecutor never learns the defense's twist early.
 from __future__ import annotations
 
 import random
+import re
 from dataclasses import dataclass, field
 
 from pydantic import BaseModel, Field
@@ -64,7 +65,9 @@ AGENT_RULES = """Stay completely in character. You speak ONE line in a live come
 - Everything is fictional. No real private individuals, no slurs, no cruelty, no real tragedies.
 - Only use these audio cues: [pause] [long pause] [sigh] [laugh] [chuckle] [gasp] [clears throat] [scoff] [whisper] [sobs].
 - Wrap at most one word in *asterisks* for vocal emphasis.
-- Write only spoken words plus cues. No stage directions in prose, no speaker names."""
+- Write only spoken words plus cues. No stage directions in prose, no speaker names.
+- Refer to people by their names. Never use internal labels like "witness_1".
+- Maximum two short sentences (under 40 words). Shorter is funnier."""
 
 
 @dataclass(slots=True)
@@ -135,6 +138,41 @@ def _mid(name: str) -> str:
     return "the " + name[4:] if name.startswith("The ") else name
 
 
+_KEY_LEAK = re.compile(r"\b(witness|surprise_witness)_?\d*\b(?=[^a-z])", re.I)
+_SENT = re.compile(r"(?<=[.!?])\s+")
+
+# Lines whose job is to state something specific must actually state it.
+_REQUIRED: dict[str, re.Pattern[str]] = {
+    "verdict_guilty": re.compile(r"\bguilty\b", re.I),
+    "verdict_not_guilty": re.compile(r"\bnot guilty\b", re.I),
+    "rule_on_objection": re.compile(r"\b(overruled|sustained)\b", re.I),
+    "overrule_and_scold": re.compile(r"\boverruled\b", re.I),
+    "object_to_evidence": re.compile(r"\bobjection\b", re.I),
+    "outraged_objection": re.compile(r"\bobjection\b", re.I),
+}
+
+
+def intent_satisfied(intent: str, text: str) -> bool:
+    if intent == "verdict_guilty" and re.search(r"\bnot guilty\b", text, re.I):
+        return False
+    rule = _REQUIRED.get(intent)
+    return bool(rule.search(text)) if rule else True
+
+
+def tighten(text: str, max_words: int = 48) -> str:
+    """Keep model lines short: at most three sentences and ~48 words, cut on a sentence boundary."""
+    text = _KEY_LEAK.sub("the witness", text).strip().strip('"')
+    out: list[str] = []
+    words = 0
+    for sentence in _SENT.split(text)[:3]:
+        n = len(sentence.split())
+        if out and words + n > max_words:
+            break
+        out.append(sentence)
+        words += n
+    return " ".join(out)
+
+
 class RoleAgent:
     role: str = "line"
     temperature = 0.95
@@ -166,8 +204,9 @@ Language: {t.case.language}. Comedy intensity: {t.case.comedy_intensity}. Drama 
         public_ev = "\n".join(
             f"- Exhibit {e.id}: {e.title} — {e.description}" for e in plan.evidence if not e.is_twist or self.knows_twist(t)
         )
-        transcript = "\n".join(f"{x.speaker}: {x.subtitle}" for x in t.transcript[-14:]) or "(nothing yet)"
-        present = ", ".join(f"{c.key} ({c.name})" for c in plan.characters if c.key != self.character.key)
+        names = {c.key: c.name for c in plan.characters}
+        transcript = "\n".join(f"{names.get(x.speaker, x.speaker)}: {x.subtitle}" for x in t.transcript[-14:]) or "(nothing yet)"
+        present = ", ".join(f"{c.name} ({c.role})" for c in plan.characters if c.key != self.character.key)
         focus = ""
         if t.evidence:
             focus += f"\nThis line concerns Exhibit {t.evidence.id}: {t.evidence.title} — {t.evidence.description}"
@@ -205,7 +244,12 @@ Write your single line now."""
             system=self.system_prompt(t), prompt=self.user_prompt(t), schema=TurnDraft,
             fallback=lambda: self.fallback(t), temperature=self.temperature, effort="low", max_tokens=800,
         )
-        return to_turn(res.value, t, self.character, turn_id), res.source
+        draft, source = res.value, res.source
+        if source not in ("mock", "fallback"):
+            draft = draft.model_copy(update={"text": tighten(draft.text)})
+            if not intent_satisfied(t.slot.intent, draft.text):
+                draft, source = self.fallback(t), "fallback"
+        return to_turn(draft, t, self.character, turn_id), source
 
 
 class JudgeAgent(RoleAgent):

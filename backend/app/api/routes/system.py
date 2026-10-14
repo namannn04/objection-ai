@@ -104,3 +104,33 @@ async def refresh_balance(s: AsyncSession = Depends(get_session)):
         s.add(AppSetting(key="fish_balance", value=value))
     await s.commit()
     return value
+
+
+@router.post("/usage/verify-free", summary="Verify S2.1 Pro Free is actually free for this account")
+async def verify_free(s: AsyncSession = Depends(get_session)):
+    """balance → one tiny s2.1-pro-free line → balance. Enabled only if the credit is unchanged.
+    Free per the published pricing; this proves it for *this* account before relying on it."""
+    from app.audio.compiler import compile_line
+    from app.audio.providers import FishAudioProvider, ProviderError
+    from app.domain.models import DialogueTurn
+    from app.services.settings_service import set_value
+
+    cfg = get_settings()
+    if not cfg.fish_audio_api_key:
+        raise HTTPException(409, "FISH_AUDIO_API_KEY not set")
+    fish = FishAudioProvider(cfg, "fish-free")
+    try:
+        before = float((await fish.balance())["credit"])
+        req = compile_line("fish-free", fish.model, DialogueTurn(id="verify", speaker="judge", text="Order in the court."),
+                           "bf322df2096a46f18c579d0baa36f41d", "")
+        await fish.synthesize(req)
+        after = float((await fish.balance())["credit"])
+    except (ProviderError, KeyError, ValueError) as exc:
+        raise HTTPException(502, f"verification failed: {exc}") from exc
+    free = abs(after - before) < 1e-9
+    await set_value(s, "fish_free_verified", free)
+    s.add(UsageRecord(case_id=None, provider="fish-free", model=fish.model, request_hash=req.cache_key,
+                      characters=req.characters, estimated_cost_usd=round(before - after, 6), outcome="synthesized",
+                      detail=f"free-tier verification: credit {before} -> {after}", billable=False))
+    await s.commit()
+    return {"verified": free, "credit_before": before, "credit_after": after}

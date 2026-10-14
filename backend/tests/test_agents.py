@@ -103,3 +103,15 @@ async def test_llm_failure_uses_scripted_fallback():
     plan = _plan()
     turn, source = await agent_for(plan.character("judge")).speak(llm, _ctx(plan), "x-1")
     assert source == "fallback" and turn.subtitle
+
+
+def test_tighten_and_intent_checks():
+    from app.agents.agents import intent_satisfied, tighten
+
+    long = "One two three. " * 30
+    assert len(tighten(long).split()) <= 48
+    assert "witness_1" not in tighten("I call witness_1 to the stand.")
+    assert intent_satisfied("verdict_guilty", "This court finds you guilty.")
+    assert not intent_satisfied("verdict_guilty", "This court finds you not guilty.")
+    assert not intent_satisfied("rule_on_objection", "Hmm, interesting point.")
+    assert intent_satisfied("testify", "anything goes")

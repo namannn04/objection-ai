@@ -8,6 +8,7 @@ a turn without audio is reported, and the job ends `blocked` or `failed`.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import re
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
@@ -141,6 +142,11 @@ class AudioGenerationService:
         voices = await self._voices(session, case)
         rep = PrepReport(total=len(rows))
         billable = self.provider.billable
+        if self.provider.name == "drama3" and self.settings.drama3_scene_strategy:
+            rows = await self._prepare_scene_blocks(session, case, rows, voices, rep, progress, allow_reserve)
+            if rep.blocked or rep.failed:
+                await session.flush()
+                return rep
         pending: list[tuple[DialogueTurnRow, VoiceAssignment, CompiledRequest]] = []
         seen: dict[str, AudioAsset | None] = {}
         for row in rows:
@@ -229,6 +235,66 @@ class AudioGenerationService:
         await session.flush()
         rep.estimated_cost_usd = round(rep.estimated_cost_usd, 4)
         return rep
+
+    async def _prepare_scene_blocks(self, session, case, rows, voices, rep: PrepReport, progress, allow_reserve) -> list:
+        """Main-branch scenes go out as one multi-speaker request each; returns rows left for line mode."""
+        from app.audio.compiler import compile_scene
+        from app.audio.scene_split import split_scene
+
+        by_scene: dict[str, list[DialogueTurnRow]] = {}
+        rest = []
+        for r in rows:
+            (by_scene.setdefault(r.scene_id, []) if r.branch_key is None and r.session_id is None else rest).append(r)
+        for scene_rows in by_scene.values():
+            scene_rows.sort(key=lambda r: r.order)
+            if len(scene_rows) < 2:
+                rest.extend(scene_rows)
+                continue
+            turns = [DialogueTurn.model_validate(r.data) for r in scene_rows]
+            req = compile_scene(self.provider.model, turns,
+                                {r.speaker: (voices[r.speaker].voice_id, voices[r.speaker].base_direction) for r in scene_rows})
+            keys = [hashlib.sha256(f"{req.cache_key}:{i}".encode()).hexdigest() for i in range(len(scene_rows))]
+            cached = [await self._cached(session, k) for k in keys]
+            if all(cached):
+                for r, a in zip(scene_rows, cached, strict=True):
+                    r.audio_asset_id = a.id
+                rep.cached += len(scene_rows)
+                continue
+            d = await self.guard.check(session, case, req, billable=True, allow_reserve=allow_reserve)
+            if not d.allowed:
+                rep.blocked += len(scene_rows)
+                rep.errors.append(d.reason)
+                await record(session, case_id=case.id, req=req, outcome="blocked", cost=d.cost_usd, billable=True, detail=d.code)
+                return rest
+            cost = estimate_cost(self.settings, req.provider, req.characters)
+            try:
+                result = await self.provider.synthesize(req, None)
+            except ProviderError as exc:
+                rep.failed += len(scene_rows)
+                rep.errors.append(str(exc))
+                await record(session, case_id=case.id, req=req, outcome="uncertain" if exc.uncertain else "failed",
+                             cost=cost, billable=True, detail=str(exc))
+                return rest
+            full = asset_path(req.cache_key)
+            full.parent.mkdir(parents=True, exist_ok=True)
+            full.write_bytes(result.audio)
+            await record(session, case_id=case.id, req=req, outcome="synthesized", cost=cost, billable=True,
+                         detail=f"scene block of {len(scene_rows)} lines")
+            outs = [asset_path(k) for k in keys]
+            pieces, method = await asyncio.to_thread(split_scene, full, outs, [len(t.text) for t in turns])
+            for r, k, t, (path, dur) in zip(scene_rows, keys, turns, pieces, strict=True):
+                a = AudioAsset(cache_key=k, provider=self.provider.name, model=self.provider.model, path=str(path),
+                               format="mp3", duration_ms=dur, size_bytes=path.stat().st_size, characters=len(t.text),
+                               timings={"words": estimate_word_timings(t.text, dur), "source": "estimated"},
+                               meta={"strategy": "scene", "split": method, "scene_request": req.cache_key})
+                session.add(a)
+                await session.flush()
+                r.audio_asset_id = a.id
+            rep.synthesized += len(scene_rows)
+            rep.characters += req.characters
+            rep.estimated_cost_usd += cost
+            await progress("audio", {"done": rep.cached + rep.synthesized, "total": rep.total})
+        return rest
 
     async def _render(self, req: CompiledRequest, voice: VoiceAssignment) -> tuple[Path, int, list[dict], str]:
         billable = self.provider.billable

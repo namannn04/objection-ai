@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     # Drama 3 list price is $50 / 1M characters (launch promo $10 until 2026-11-12).
     # Estimates use the list price on purpose: over-estimating protects the demo credit.
     drama3_usd_per_million_chars: float = 50.0
+    # Experimental: synthesize whole scenes as Drama 3 multi-speaker blocks, then split per line.
+    drama3_scene_strategy: bool = False
 
     # llm
     llm_provider: LLMProviderName = "mock"

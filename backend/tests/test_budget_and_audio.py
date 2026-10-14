@@ -154,3 +154,25 @@ def test_mock_synth_exact_timings():
     assert all(a["e"] <= b["s"] for a, b in zip(words, words[1:]))
     assert words[1]["s"] - words[0]["e"] >= 450  # the [pause]
     assert words[-1]["e"] <= len(samples) * 1000 / mock_synth.SR
+
+
+def test_scene_split_by_silence(tmp_path):
+    """Three mock lines joined with clear gaps split back into three clips at the gaps."""
+    import numpy as np
+
+    from app.audio import ffmpeg, mock_synth
+    from app.audio.mock_synth import MockVoice
+    from app.audio.scene_split import cut_points, split_scene
+
+    parts, lens = [], []
+    for i, text in enumerate(["Order in the court.", "Objection! That is arithmetic.", "Overruled."]):
+        samples, _ = mock_synth.synthesize(text, MockVoice(f0=120 + 60 * i), "neutral", 3, i)
+        parts += [samples, np.zeros(int(mock_synth.SR * 0.9), dtype=np.float32)]
+        lens.append(len(text))
+    src = tmp_path / "scene.mp3"
+    ffmpeg.encode_pcm(mock_synth.to_pcm16(np.concatenate(parts[:-1])), mock_synth.SR, src)
+    pieces, method = split_scene(src, [tmp_path / f"{i}.mp3" for i in range(3)], lens)
+    assert method == "silence" and len(pieces) == 3 and all(d > 300 for _, d in pieces)
+    # Not enough gaps → proportional cuts, never a re-request.
+    cuts, how = cut_points([], 3, 9000, [10, 20, 30])
+    assert how == "proportional" and cuts == [1500, 4500]
