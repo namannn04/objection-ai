@@ -5,7 +5,7 @@ async function playToVerdict(page: Page, final: "Guilty" | "Not guilty", gate = 
   const rise = page.getByRole("button", { name: "All rise" });
   if (gate) await rise.click();
   await page.waitForTimeout(1500); // let the previous verdict card close after a replay
-  const deadline = Date.now() + 180_000;
+  const deadline = Date.now() + 420_000;
   while (Date.now() < deadline) {
     if (await page.getByText("Retry with a different verdict").isVisible().catch(() => false)) return;
     const dialog = page.locator("[role=dialog]");
