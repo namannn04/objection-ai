@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { CourtroomStage } from "@/components/court/courtroom-stage";
+import { StageSwitch, useStageMode } from "@/components/court3d/stage-switch";
 import { DEMO_CAST, DEMO_LINES } from "@/lib/demo-cast";
 import type { Reaction } from "@/lib/types";
 import { ROLE_LABEL } from "@/lib/utils";
@@ -30,6 +30,7 @@ export function Hero() {
       clearTimeout(b);
     };
   }, [i]);
+  const [stageMode] = useStageMode();
   const line = DEMO_LINES[i];
   const speaker = DEMO_CAST.find((c) => c.key === line.speaker)!;
   const reactions = useMemo<Record<string, Reaction>>(
@@ -108,7 +109,9 @@ export function Hero() {
           transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
           className="relative"
         >
-          <CourtroomStage
+          <StageSwitch
+            mode={stageMode}
+            burst={line.speaker === "defense" && talking ? i : 0}
             characters={DEMO_CAST}
             speaker={talking ? line.speaker : null}
             emotion={line.emotion}

@@ -75,12 +75,25 @@ export function HowItWorks() {
   );
 }
 
+function tilt(e: React.PointerEvent<HTMLAnchorElement>) {
+  const el = e.currentTarget;
+  const r = el.getBoundingClientRect();
+  const px = (e.clientX - r.left) / r.width - 0.5;
+  const py = (e.clientY - r.top) / r.height - 0.5;
+  el.style.transform = `perspective(900px) rotateY(${px * 7}deg) rotateX(${-py * 7}deg) translateZ(0)`;
+  el.style.setProperty("--gx", `${(px + 0.5) * 100}%`);
+  el.style.setProperty("--gy", `${(py + 0.5) * 100}%`);
+}
+
 export function CaseFileCard({ c, large = false }: { c: CaseSummary; large?: boolean }) {
   return (
     <Link
+      onPointerMove={tilt}
+      onPointerLeave={(e) => { e.currentTarget.style.transform = ""; }}
+      style={{ backgroundImage: "radial-gradient(400px circle at var(--gx,50%) var(--gy,0%), rgb(214 174 98 / 0.10), transparent 60%)" }}
       href={`/case/${c.slug}`}
       className={cn(
-        "group relative flex flex-col justify-between overflow-hidden rounded-2xl border hairline bg-ink-2 p-6 transition-colors hover:border-gold/40",
+        "group relative flex flex-col justify-between overflow-hidden rounded-2xl border hairline bg-ink-2 p-6 transition-[border-color,transform] duration-300 ease-out will-change-transform hover:border-gold/40",
         large ? "min-h-[300px] sm:p-8" : "min-h-[220px]",
       )}
     >
