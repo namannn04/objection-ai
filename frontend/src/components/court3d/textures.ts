@@ -217,3 +217,58 @@ export function beamTexture() {
     g.fillRect(0, 0, 64, 512);
   });
 }
+
+/** Polished walnut floorboards with staggered joints and grain. */
+export function plankTexture() {
+  return canvasTexture(1024, 1024, (g) => {
+    const rows = 10;
+    const h = 1024 / rows;
+    for (let r = 0; r < rows; r++) {
+      let x = -((r * 173) % 400);
+      while (x < 1024) {
+        const len = 260 + ((r * 97 + x) % 220);
+        const tone = 28 + ((r * 13 + Math.floor(x)) % 9) - 4;
+        g.fillStyle = `rgb(${tone + 30}, ${tone + 14}, ${tone})`;
+        g.fillRect(x, r * h, len, h);
+        g.globalAlpha = 0.12;
+        for (let k = 0; k < 7; k++) {
+          g.strokeStyle = k % 2 ? "#000" : "#6b4a33";
+          g.lineWidth = 1 + (k % 3);
+          g.beginPath();
+          const y0 = r * h + 6 + ((k * 23 + x) % (h - 12));
+          g.moveTo(x, y0);
+          g.bezierCurveTo(x + len / 3, y0 + 4, x + (2 * len) / 3, y0 - 4, x + len, y0 + 1);
+          g.stroke();
+        }
+        g.globalAlpha = 1;
+        g.fillStyle = "rgba(0,0,0,0.65)";
+        g.fillRect(x, r * h, 2, h);
+        x += len;
+      }
+      g.fillStyle = "rgba(0,0,0,0.55)";
+      g.fillRect(0, r * h, 1024, 2);
+    }
+  }, [4, 4]);
+}
+
+/** Court carpet: deep oxblood with a woven gold border pattern. */
+export function carpetTexture() {
+  return canvasTexture(256, 1024, (g) => {
+    g.fillStyle = "#4a1219";
+    g.fillRect(0, 0, 256, 1024);
+    g.globalAlpha = 0.18;
+    for (let y = 0; y < 1024; y += 16) {
+      for (let x = 30; x < 226; x += 16) {
+        g.fillStyle = (x + y) % 32 ? "#000" : "#7a2a33";
+        g.fillRect(x, y, 8, 8);
+      }
+    }
+    g.globalAlpha = 1;
+    g.fillStyle = "#b8914d";
+    g.fillRect(10, 0, 6, 1024);
+    g.fillRect(240, 0, 6, 1024);
+    g.fillStyle = "#6b4c22";
+    g.fillRect(20, 0, 3, 1024);
+    g.fillRect(233, 0, 3, 1024);
+  }, [1, 3]);
+}

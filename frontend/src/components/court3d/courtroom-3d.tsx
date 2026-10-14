@@ -1,8 +1,8 @@
 "use client";
 
-import { AdaptiveDpr, PerformanceMonitor, Sparkles } from "@react-three/drei";
+import { AdaptiveDpr, Environment, Lightformer, PerformanceMonitor, Sparkles } from "@react-three/drei";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Bloom, EffectComposer, Noise, Vignette } from "@react-three/postprocessing";
+import { Bloom, EffectComposer, N8AO, Noise, Vignette } from "@react-three/postprocessing";
 import { easing } from "maath";
 import { Suspense, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
@@ -182,8 +182,15 @@ function Scene({ characters, speaker, emotion, reactions = {}, amplitude = null,
           />
         );
       })}
+      {/* local studio environment (no network): warm softboxes for believable reflections on wood and brass */}
+      <Environment resolution={128} frames={1} environmentIntensity={0.35}>
+        <Lightformer form="rect" intensity={2.2} color="#ffd9a8" position={[0, 6, 2]} rotation-x={Math.PI / 2} scale={[10, 4, 1]} />
+        <Lightformer form="rect" intensity={1.2} color="#c9d4ff" position={[9, 3, -2]} rotation-y={-Math.PI / 2} scale={[6, 3, 1]} />
+        <Lightformer form="ring" intensity={1.5} color="#ffcf8a" position={[0, 4, -7]} scale={3} />
+      </Environment>
       <Sparkles count={70} scale={[14, 6, 12]} position={[0, 3.2, -1]} size={1.6} speed={0.18} opacity={0.35} color="#ffe2b0" />
-      <EffectComposer multisampling={0}>
+      <EffectComposer multisampling={0} enableNormalPass={false}>
+        {reflections ? <N8AO aoRadius={0.6} intensity={2.2} distanceFalloff={0.8} halfRes quality="low" /> : <></>}
         <Bloom intensity={0.42} luminanceThreshold={0.82} luminanceSmoothing={0.2} mipmapBlur />
         <Vignette eskil={false} offset={0.22} darkness={0.82} />
         <Noise opacity={0.045} />

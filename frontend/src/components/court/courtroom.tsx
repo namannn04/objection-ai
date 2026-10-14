@@ -1,16 +1,18 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
+import { FolderOpen, X } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { StageSwitch, useStageMode } from "@/components/court3d/stage-switch";
 import type { Mode } from "@/lib/types";
-import { cn, PHASE_LABEL } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { usePlayer } from "@/stores/player";
 import { ObjectionBurst, SceneTitleCard, StageExhibit } from "./hud";
-import { SceneProgress, StageCaptions, StageControls, WaitingNote, useCourtKeys } from "./stage-hud";
-import { InterventionPanel, ObjectionButton } from "./interventions";
+import { InterventionPanel } from "./interventions";
+import { PhaseStepper } from "./phase-stepper";
 import { SidePanel } from "./side-panel";
+import { SceneProgress, StageCaptions, StageControls, WaitingNote, useCourtKeys } from "./stage-hud";
 import { useCourtroom } from "./use-courtroom";
 import { VerdictCard, VerdictReveal } from "./verdict";
 
@@ -28,14 +30,15 @@ export function Courtroom({ caseRef, mode }: { caseRef: string; mode: Mode }) {
   const gavel = usePlayer((s) => s.gavel);
   const verdictStamp = usePlayer((s) => s.verdictStamp);
   const [stageMode, setStageMode, can3d] = useStageMode();
+  const [drawer, setDrawer] = useState(false);
   useCourtKeys(c.togglePause, c.jumpLine);
   const [startedAt, setStartedAt] = useState(() => Date.now());
 
   const scene = manifest?.scenes.find((s) => s.key === sceneKey);
   const witnessKey = useMemo(() => {
     if (!manifest || !scene) return null;
-    const inScene = [...scene.segments].reverse().find((s) => manifest.characters.find((c2) => c2.key === s.speaker)?.role === "witness");
-    if (seg && manifest.characters.find((c2) => c2.key === seg.speaker)?.role === "witness") return seg.speaker;
+    if (seg && manifest.characters.find((x) => x.key === seg.speaker)?.role === "witness") return seg.speaker;
+    const inScene = [...scene.segments].reverse().find((s) => manifest.characters.find((x) => x.key === s.speaker)?.role === "witness");
     return inScene?.speaker ?? null;
   }, [manifest, scene, seg]);
   const openWindowScene = manifest?.scenes.find((s) => s.key === session?.open_window);
@@ -51,23 +54,22 @@ export function Courtroom({ caseRef, mode }: { caseRef: string; mode: Mode }) {
       </div>
     );
   }
-  if (!manifest) return <div className="mx-auto mt-10 aspect-[16/9] w-full max-w-[1400px] animate-pulse rounded-3xl bg-ink-2" />;
+  if (!manifest) return <div className="mx-auto mt-6 aspect-[16/9] w-full max-w-[1400px] animate-pulse rounded-3xl bg-ink-2" />;
 
   const ready = status === "ready" || status === "idle" || status === "loading";
 
   return (
-    <div className="mx-auto w-full max-w-[1500px]">
-      <header className="flex flex-wrap items-center justify-between gap-3 pb-4">
+    <div className="mx-auto flex w-full max-w-[calc((100vh-150px)*1.7778)] flex-col">
+      {/* compact top bar */}
+      <header className="flex items-end justify-between gap-4 pb-3">
         <div className="min-w-0">
-          <Link href={`/case/${manifest.case.slug}`} className="font-mono text-[10px] uppercase tracking-[0.2em] text-mute hover:text-ivory">← {manifest.case.case_number}</Link>
-          <h1 className="truncate font-display text-3xl leading-tight sm:text-4xl">{manifest.case.title}</h1>
+          <Link href={`/case/${manifest.case.slug}`} className="font-mono text-[10px] uppercase tracking-[0.2em] text-mute hover:text-ivory">
+            ← {manifest.case.case_number}
+          </Link>
+          <h1 className="truncate font-display text-2xl leading-tight sm:text-3xl">{manifest.case.title}</h1>
         </div>
-        <div className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.18em]">
-          <span className="flex items-center gap-2 rounded-full border border-line-strong px-3 py-1.5 text-ivory">
-            <span className={cn("h-1.5 w-1.5 rounded-full", status === "playing" ? "bg-burgundy-bright animate-blink" : "bg-mute")} />
-            {PHASE_LABEL[session?.phase ?? "COURTROOM_READY"]}
-          </span>
-          <span className="rounded-full border border-line px-3 py-1.5 text-mute">{mode} mode</span>
+        <div className="flex shrink-0 items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em]">
+          <span className="hidden rounded-full border border-line px-3 py-1.5 text-mute sm:inline">{mode} mode</span>
           {can3d && (
             <div className="flex rounded-full border border-line p-0.5" role="radiogroup" aria-label="Stage view">
               {(["3d", "2d"] as const).map((m) => (
@@ -81,80 +83,105 @@ export function Courtroom({ caseRef, mode }: { caseRef: string; mode: Mode }) {
         </div>
       </header>
 
-      <div className="grid items-start gap-4 lg:grid-cols-[1fr_320px]">
-        <div className="overflow-hidden rounded-[20px] border hairline bg-black shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)]">
-          <div className="mx-auto w-full lg:max-w-[calc((100vh-190px)*1.7778)]">
-          <StageSwitch
-            mode={stageMode}
-            burst={burst}
-            gavel={gavel}
-            celebrate={verdictStamp}
-            verdict={session?.phase === "VERDICT" && seg?.speaker === "judge"}
-            segmentKind={seg?.kind}
-            characters={manifest.characters}
-            speaker={seg?.speaker ?? null}
-            emotion={seg?.emotion}
-            reactions={reactions}
-            amplitude={c.amplitude}
-            witnessKey={witnessKey}
-            className="rounded-none border-0"
-            live={status === "playing"}
-          >
-            <SceneTitleCard />
-            <StageExhibit evidence={manifest.evidence} />
-            <ObjectionBurst />
-            <VerdictReveal verdict={session?.verdict ?? null} />
-            <StageCaptions characters={manifest.characters} hidden={showWindow} />
-            <WaitingNote />
-            <SceneProgress />
-            {!ready && (
-              <div className="absolute right-[2.5%] top-[3.5%] z-[14]">
-                <StageControls onToggle={c.togglePause} onJump={c.jumpLine} onVolume={c.setVolume} />
+      {/* the stage: everything happens in here */}
+      <div className="relative overflow-hidden rounded-[22px] border hairline bg-black shadow-[0_50px_140px_-50px_rgba(0,0,0,1)]">
+        <StageSwitch
+          mode={stageMode}
+          burst={burst}
+          gavel={gavel}
+          celebrate={verdictStamp}
+          verdict={session?.phase === "VERDICT" && seg?.speaker === "judge"}
+          segmentKind={seg?.kind}
+          characters={manifest.characters}
+          speaker={seg?.speaker ?? null}
+          emotion={seg?.emotion}
+          reactions={reactions}
+          amplitude={c.amplitude}
+          witnessKey={witnessKey}
+          className="rounded-none border-0"
+          live={status === "playing"}
+        >
+          <SceneTitleCard />
+          <StageExhibit evidence={manifest.evidence} />
+          <ObjectionBurst />
+          <VerdictReveal verdict={session?.verdict ?? null} />
+          <StageCaptions characters={manifest.characters} hidden={showWindow} />
+          <WaitingNote />
+          <SceneProgress />
+
+          {!ready && (
+            <div className="absolute right-[2%] top-[3%] z-[14] flex items-center gap-2">
+              <button
+                onClick={() => setDrawer((v) => !v)}
+                className="pointer-events-auto flex items-center gap-2 rounded-full border border-white/10 bg-ink/55 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-ivory/85 backdrop-blur-md transition-colors hover:text-ivory"
+                aria-expanded={drawer}
+              >
+                <FolderOpen className="h-3.5 w-3.5" /> Case file
+              </button>
+              <StageControls onToggle={c.togglePause} onJump={c.jumpLine} onVolume={c.setVolume} />
+            </div>
+          )}
+
+          {/* intervention window, inside the stage */}
+          <AnimatePresence>
+            {showWindow && openWindowScene?.window && (
+              <div className="absolute inset-x-[3%] bottom-[4%] z-[15] max-h-[88%] overflow-y-auto">
+                <InterventionPanel
+                  key={openWindowScene.key}
+                  window={openWindowScene.window}
+                  mode={mode}
+                  onChoose={c.choose}
+                  onSkip={c.skipWindow}
+                  onFreeText={c.intervene}
+                />
               </div>
             )}
-            <AnimatePresence>
-              {showWindow && openWindowScene?.window && (
-                <div className="absolute inset-x-[3%] bottom-[4%] z-[15]">
-                  <InterventionPanel
-                    key={openWindowScene.key}
-                    window={openWindowScene.window}
-                    mode={mode}
-                    onChoose={c.choose}
-                    onSkip={c.skipWindow}
-                    onFreeText={c.intervene}
-                  />
-                </div>
-              )}
-            </AnimatePresence>
-            <AnimatePresence>
-              {ready && (
-                <motion.div className="absolute inset-0 grid place-items-center bg-ink/75 backdrop-blur-[2px]" exit={{ opacity: 0 }}>
-                  <div className="text-center">
-                    <div className="eyebrow">{manifest.audio.ready ? "The court is ready" : "Some audio is missing"}</div>
-                    <button
-                      onClick={c.begin}
-                      disabled={status === "loading" || !session}
-                      className="mt-5 rounded-full bg-gold px-10 py-5 font-display text-3xl italic text-ink shadow-[0_20px_60px_-15px_rgb(214_174_98/0.7)] transition-transform hover:scale-[1.03] disabled:opacity-70"
-                    >
-                      {status === "loading" ? `Preparing… ${loaded}/${toLoad}` : "All rise"}
-                    </button>
-                    <p className="mt-4 text-xs text-mute">Sound on. Space to pause · ← → to skip lines · R to replay.</p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </StageSwitch>
-          </div>
-        </div>
+          </AnimatePresence>
 
-        <div className="flex flex-col gap-4 lg:h-[calc(100vh-190px)] lg:max-h-[min(860px,calc((100vw-420px)*0.5625))]">
-          <ObjectionButton
-            mode={mode}
-            armed={showWindow && openWindowScene?.window?.kind === "objection"}
-            onPress={() => document.querySelector<HTMLButtonElement>("[role=dialog] button.animate-pulse-gold")?.click()}
-          />
-          <div className="min-h-0 flex-1"><SidePanel manifest={manifest} session={session} /></div>
-        </div>
+          {/* the case file slides over the stage */}
+          <AnimatePresence>
+            {drawer && !ready && (
+              <motion.div
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ type: "spring", stiffness: 260, damping: 30 }}
+                className="absolute inset-y-0 right-0 z-[16] flex w-[min(360px,92%)] flex-col bg-ink/85 p-3 backdrop-blur-xl"
+              >
+                <button onClick={() => setDrawer(false)} aria-label="Close case file"
+                  className="mb-2 ml-auto grid h-8 w-8 place-items-center rounded-full text-mute hover:bg-white/10 hover:text-ivory">
+                  <X className="h-4 w-4" />
+                </button>
+                <div className="min-h-0 flex-1"><SidePanel manifest={manifest} session={session} /></div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* the gate */}
+          <AnimatePresence>
+            {ready && (
+              <motion.div className="absolute inset-0 z-[20] grid place-items-center bg-ink/70 backdrop-blur-[3px]" exit={{ opacity: 0 }}>
+                <div className="text-center">
+                  <div className="eyebrow">{manifest.audio.ready ? "The court is ready" : "Some audio is missing"}</div>
+                  <div className="mt-3 font-display text-[clamp(1.6rem,4vw,3rem)] leading-tight">{manifest.case.title}</div>
+                  <button
+                    onClick={c.begin}
+                    disabled={status === "loading" || !session}
+                    className="mt-6 rounded-full bg-gold px-10 py-4 font-display text-3xl italic text-ink shadow-[0_20px_60px_-15px_rgb(214_174_98/0.7)] transition-transform hover:scale-[1.03] disabled:opacity-70"
+                  >
+                    {status === "loading" ? `Preparing… ${loaded}/${toLoad}` : "All rise"}
+                  </button>
+                  <p className="mt-4 text-xs text-mute">Sound on · Space pause · ← → skip lines · R replay</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </StageSwitch>
+      </div>
+
+      {/* the docket: progress through the trial */}
+      <div className="mt-4 px-1">
+        <PhaseStepper manifest={manifest} session={session} />
       </div>
 
       {status === "completed" && session?.verdict && (

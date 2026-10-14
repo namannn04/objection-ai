@@ -4,7 +4,7 @@ import { MeshReflectorMaterial } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
-import { labelTexture, marbleTexture, sealTexture, woodTexture } from "./textures";
+import { carpetTexture, labelTexture, plankTexture, sealTexture, woodTexture } from "./textures";
 
 const GOLD = { color: "#d6ae62", metalness: 0.85, roughness: 0.28 } as const;
 
@@ -117,20 +117,41 @@ function WallClock({ position }: { position: V3 }) {
   );
 }
 
+/** A tall window at night: moonlit glass, brass frame, mullions. */
 function Window({ x, z }: { x: number; z: number }) {
   const dir = Math.sign(x);
+  const rot: V3 = [0, -dir * Math.PI / 2, 0];
   return (
-    <group>
-      <mesh position={[x - dir * 0.02, 3.6, z]} rotation={[0, -dir * Math.PI / 2, 0]}>
-        <planeGeometry args={[1.5, 3.4]} />
-        <meshBasicMaterial color="#c9b796" toneMapped={false} />
+    <group position={[x - dir * 0.02, 3.7, z]} rotation={rot}>
+      <mesh position={[0, 0, -0.01]}>
+        <planeGeometry args={[1.8, 3.6]} />
+        <meshStandardMaterial color="#1a1410" roughness={0.6} />
+      </mesh>
+      <mesh>
+        <planeGeometry args={[1.5, 3.3]} />
+        <meshBasicMaterial color="#26385c" toneMapped={false} />
+      </mesh>
+      {/* moon glow in the upper pane */}
+      <mesh position={[0.25, 0.95, 0.005]}>
+        <circleGeometry args={[0.32, 32]} />
+        <meshBasicMaterial color="#5f7db0" transparent opacity={0.55} toneMapped={false} />
       </mesh>
       {[-0.375, 0.375].map((dx) => (
-        <mesh key={dx} position={[x - dir * 0.03, 3.6, z + dx]} rotation={[0, -dir * Math.PI / 2, 0]}>
-          <planeGeometry args={[0.04, 3.4]} />
-          <meshBasicMaterial color="#1a120d" />
+        <mesh key={dx} position={[dx, 0, 0.01]}>
+          <planeGeometry args={[0.04, 3.3]} />
+          <meshStandardMaterial color="#b8914d" metalness={0.7} roughness={0.35} />
         </mesh>
       ))}
+      {[-0.82, 0, 0.82].map((dy) => (
+        <mesh key={dy} position={[0, dy, 0.01]}>
+          <planeGeometry args={[1.5, 0.04]} />
+          <meshStandardMaterial color="#b8914d" metalness={0.7} roughness={0.35} />
+        </mesh>
+      ))}
+      <mesh position={[0, -1.72, 0.06]}>
+        <boxGeometry args={[1.9, 0.08, 0.16]} />
+        <meshStandardMaterial color="#2a1c14" roughness={0.6} />
+      </mesh>
     </group>
   );
 }
@@ -223,9 +244,77 @@ function Gavel({ strikes }: { strikes: number }) {
   );
 }
 
+function Sconce({ position }: { position: V3 }) {
+  return (
+    <group position={position}>
+      <mesh position={[0, -0.1, 0.06]}>
+        <boxGeometry args={[0.12, 0.42, 0.06]} />
+        <meshStandardMaterial {...GOLD} />
+      </mesh>
+      <mesh position={[0, 0.2, 0.16]}>
+        <cylinderGeometry args={[0.13, 0.09, 0.26, 18, 1, true]} />
+        <meshStandardMaterial color="#f3dfb6" emissive="#ffcf8a" emissiveIntensity={1.4} side={THREE.DoubleSide} toneMapped={false} />
+      </mesh>
+      <pointLight position={[0, 0.25, 0.4]} intensity={3.2} distance={5} decay={1.7} color="#ffc977" />
+    </group>
+  );
+}
+
+/** A fictional court banner on a pole: burgundy, gold seal, swaying a little. */
+function Banner({ position, phase = 0 }: { position: V3; phase?: number }) {
+  const cloth = useRef<THREE.Mesh>(null);
+  const seal = useMemo(() => sealTexture(), []);
+  useFrame(({ clock }) => {
+    if (cloth.current) cloth.current.rotation.y = Math.sin(clock.elapsedTime * 0.8 + phase) * 0.12;
+  });
+  return (
+    <group position={position}>
+      <mesh position={[0, 2.4, 0]} castShadow>
+        <cylinderGeometry args={[0.035, 0.045, 4.8, 10]} />
+        <meshStandardMaterial {...GOLD} />
+      </mesh>
+      <mesh position={[0, 4.9, 0]}>
+        <sphereGeometry args={[0.09, 14, 14]} />
+        <meshStandardMaterial {...GOLD} />
+      </mesh>
+      <mesh ref={cloth} position={[0.55, 3.55, 0]} castShadow>
+        <planeGeometry args={[1.05, 2.1]} />
+        <meshStandardMaterial color="#6b202a" roughness={0.9} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh position={[0.55, 3.75, 0.012]}>
+        <circleGeometry args={[0.36, 40]} />
+        <meshStandardMaterial map={seal} transparent emissive="#d6ae62" emissiveMap={seal} emissiveIntensity={0.35} />
+      </mesh>
+      <Box args={[1.07, 0.08, 0.04]} position={[0.55, 4.62, 0]} material={new THREE.MeshStandardMaterial(GOLD)} cast={false} />
+    </group>
+  );
+}
+
+/** Gallery pews behind the bar — depth in the foreground of the wide shot. */
+function GalleryBenches({ mats }: { mats: ReturnType<typeof useMats> }) {
+  const rows = [5.6, 6.9, 8.2];
+  return (
+    <group>
+      {rows.flatMap((z) =>
+        [-1, 1].map((side) => (
+          <group key={`${z}${side}`} position={[side * 4.9, 0, z]}>
+            <Box args={[6.2, 0.08, 0.55]} position={[0, 0.48, 0]} material={mats.wood} />
+            <Box args={[6.2, 0.62, 0.07]} position={[0, 0.85, 0.27]} material={mats.wood} />
+            <Box args={[6.25, 0.05, 0.1]} position={[0, 1.17, 0.27]} material={mats.gold} cast={false} />
+            {[-3, 3].map((x) => (
+              <Box key={x} args={[0.08, 0.95, 0.6]} position={[x, 0.48, 0.02]} material={mats.darkWood} />
+            ))}
+          </group>
+        )),
+      )}
+    </group>
+  );
+}
+
 export function CourtroomSet({ reflections = true, gavel = 0 }: { reflections?: boolean; gavel?: number }) {
   const mats = useMats();
-  const marble = useMemo(() => marbleTexture(), []);
+  const planks = useMemo(() => plankTexture(), []);
+  const carpet = useMemo(() => carpetTexture(), []);
   const seal = useMemo(() => sealTexture(), []);
   const motto = useMemo(() => labelTexture("In Nonsense We Trust", { w: 1400, h: 120, font: "italic 400 76px 'Instrument Serif', Georgia, serif", bg: "rgba(0,0,0,0)", border: "rgba(0,0,0,0)" }), []);
   const balusters = useMemo(() => Array.from({ length: 26 }, (_, i) => -7.5 + i * 0.6).filter((x) => Math.abs(x) > 0.7), []);
@@ -236,12 +325,44 @@ export function CourtroomSet({ reflections = true, gavel = 0 }: { reflections?: 
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[19, 18]} />
         {reflections ? (
-          <MeshReflectorMaterial map={marble} mirror={0.4} blur={[260, 80]} resolution={512} mixBlur={1} mixStrength={1.6}
-            roughness={0.75} depthScale={0.8} minDepthThreshold={0.4} maxDepthThreshold={1.2} color="#ffffff" metalness={0.3} />
+          <MeshReflectorMaterial map={planks} mirror={0.22} blur={[320, 90]} resolution={512} mixBlur={1} mixStrength={1.1}
+            roughness={0.62} depthScale={0.7} minDepthThreshold={0.4} maxDepthThreshold={1.2} color="#ffffff" metalness={0.15} />
         ) : (
-          <meshStandardMaterial map={marble} roughness={0.45} metalness={0.2} />
+          <meshStandardMaterial map={planks} roughness={0.45} metalness={0.1} />
         )}
       </mesh>
+      {/* carpet runner down the aisle to the dock */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.006, 5.2]} receiveShadow>
+        <planeGeometry args={[2.1, 9.4]} />
+        <meshStandardMaterial map={carpet} roughness={1} />
+      </mesh>
+
+      {/* ceiling: coffered, with recessed lights */}
+      <mesh position={[0, 7.4, 0.5]} rotation={[Math.PI / 2, 0, 0]} material={mats.plaster}>
+        <planeGeometry args={[19, 18]} />
+      </mesh>
+      {[-6, -2, 2, 6].map((x) => (
+        <Box key={`bx${x}`} args={[0.35, 0.3, 18]} position={[x, 7.25, 0.5]} material={mats.darkWood} cast={false} />
+      ))}
+      {[-5, -1, 3, 7].map((z) => (
+        <Box key={`bz${z}`} args={[19, 0.3, 0.35]} position={[0, 7.25, z]} material={mats.darkWood} cast={false} />
+      ))}
+      {[[-4, -3], [0, -3], [4, -3], [-4, 1], [4, 1], [-4, 5], [0, 5], [4, 5]].map(([x, z]) => (
+        <mesh key={`rl${x}${z}`} position={[x, 7.38, z]} rotation={[Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[0.16, 20]} />
+          <meshBasicMaterial color="#ffe6b8" toneMapped={false} />
+        </mesh>
+      ))}
+      {/* crown molding */}
+      <Box args={[19, 0.22, 0.3]} position={[0, 7.1, -7.32]} material={mats.gold} cast={false} />
+      <Box args={[0.3, 0.22, 18]} position={[-9.33, 7.1, 0.5]} material={mats.gold} cast={false} />
+      <Box args={[0.3, 0.22, 18]} position={[9.33, 7.1, 0.5]} material={mats.gold} cast={false} />
+
+      <Sconce position={[-3.4, 3.6, -7.28]} />
+      <Sconce position={[3.4, 3.6, -7.28]} />
+      <Banner position={[-4.6, 0, -6.6]} />
+      <Banner position={[4.6, 0, -6.6]} phase={1.3} />
+      <GalleryBenches mats={mats} />
 
       {/* walls */}
       <mesh position={[0, 4, -7.5]} material={mats.wall} receiveShadow><planeGeometry args={[19, 8]} /></mesh>
