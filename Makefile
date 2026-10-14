@@ -2,7 +2,7 @@
 SHELL := /bin/bash
 PY := backend/.venv/bin/python
 
-.PHONY: setup infra migrate seed backend worker frontend dev test e2e lint build clean
+.PHONY: setup infra migrate seed backend worker frontend dev stop test e2e lint build clean
 
 setup: ## Install everything (Python venv + npm)
 	cd backend && python3 -m venv .venv && .venv/bin/pip install -q -r requirements-dev.txt
@@ -33,6 +33,10 @@ dev: infra migrate seed ## Everything, in one terminal (Ctrl+C stops both)
 	(cd backend && .venv/bin/uvicorn app.main:app --port 8000) & \
 	(cd frontend && npm run dev) & \
 	wait
+
+stop: ## Free ports 8000/3000 if an old API or web server is still running
+	@for port in 8000 3000; do pid=$$(lsof -t -iTCP:$$port -sTCP:LISTEN 2>/dev/null); \
+	  if [ -n "$$pid" ]; then echo "stopping $$port (pid $$pid)"; kill $$pid; fi; done; true
 
 test: ## Backend tests (SQLite, mock providers, no network)
 	cd backend && .venv/bin/python -m pytest -q
