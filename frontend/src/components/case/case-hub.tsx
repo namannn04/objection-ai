@@ -1,11 +1,12 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
 import { api } from "@/lib/api";
 import type { Mode } from "@/lib/types";
 import { cn, formatMs } from "@/lib/utils";
+import { BudgetGate } from "./budget-gate";
 import { EvidenceCard } from "./evidence-card";
 import { WitnessCard } from "./witness-card";
 
@@ -25,6 +26,15 @@ export function CaseHub({ caseRef }: { caseRef: string }) {
   const detail = useQuery({ queryKey: ["case", caseRef], queryFn: () => api.getCase(caseRef) });
   const manifest = useQuery({ queryKey: ["manifest", caseRef], queryFn: () => api.manifest(caseRef) });
   const [mode, setMode] = useState<Mode | null>(null);
+  const [paid, setPaid] = useState(false);
+  const qc = useQueryClient();
+  const settings = useQuery({ queryKey: ["settings"], queryFn: api.settings });
+  const rerecord = useMutation({
+    mutationFn: (provider: "mock" | "fish-free") => api.prepareAudio(caseRef, provider),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["status", caseRef] }),
+  });
+  const free = settings.data?.providers.audio["fish-free"];
+  const drama = settings.data?.providers.audio.drama3;
   const d = detail.data;
   const m = manifest.data;
   if (!d || !m) return <div className="mx-auto h-[60vh] w-full max-w-[1300px] animate-pulse rounded-3xl bg-ink-2" />;
@@ -93,6 +103,29 @@ export function CaseHub({ caseRef }: { caseRef: string }) {
           {m.evidence.map((e) => <EvidenceCard key={e.id} e={e} revealed={!e.is_twist} />)}
         </div>
         <p className="mt-3 text-xs text-mute">One exhibit stays sealed until it is presented in court.</p>
+      </section>
+
+      <section className="mt-16 rounded-2xl border hairline bg-ink-2 p-6">
+        <div className="eyebrow">Voices</div>
+        <p className="mt-2 text-sm text-mute">
+          Re-record this trial with another voice provider. Unchanged lines are reused from the cache.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <button disabled={rerecord.isPending} onClick={() => rerecord.mutate("mock")}
+            className="rounded-full border border-line-strong px-4 py-2 text-sm hover:bg-white/5 disabled:opacity-50">Mock voices (free)</button>
+          <button disabled={rerecord.isPending || !free?.available} onClick={() => rerecord.mutate("fish-free")}
+            title={free?.reason} className="rounded-full border border-line-strong px-4 py-2 text-sm hover:bg-white/5 disabled:opacity-40">
+            Fish S2.1 Pro Free
+          </button>
+          <button disabled={!drama?.available} onClick={() => setPaid((v) => !v)} title={drama?.reason}
+            className="rounded-full border border-gold/50 px-4 py-2 text-sm text-gold hover:bg-gold/10 disabled:opacity-40">
+            Fish Drama 3 (paid)…
+          </button>
+        </div>
+        {!free?.available && free?.reason && <p className="mt-2 text-xs text-mute">S2.1 Free: {free.reason}</p>}
+        {!drama?.available && drama?.reason && <p className="mt-1 text-xs text-mute">Drama 3: {drama.reason}</p>}
+        {rerecord.isError && <p className="mt-2 text-sm text-burgundy-bright">{(rerecord.error as Error).message}</p>}
+        {paid && drama?.available && <div className="mt-6"><BudgetGate caseRef={caseRef} detail="" /></div>}
       </section>
 
       <details className="group mt-16 rounded-2xl border hairline bg-ink-2 p-6">

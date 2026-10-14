@@ -86,6 +86,7 @@ export const api = {
     request<SettingsInfo>("/api/settings", { method: "PATCH", body: JSON.stringify(body) }),
   usage: () => request<Usage>("/api/usage"),
   refreshBalance: () => post<{ credit: string }>("/api/usage/balance/refresh"),
+  verifyFree: () => post<{ verified: boolean; credit_before: number; credit_after: number }>("/api/usage/verify-free"),
   job: (id: string) => request<Job>(`/api/jobs/${id}`),
   createPodcast: (ref: string, body: { verdict?: "guilty" | "not_guilty"; session_id?: string }) =>
     post<{ id: string; job_id: string; status: string }>(`/api/cases/${ref}/podcast`, body),

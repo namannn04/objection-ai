@@ -22,6 +22,13 @@ export function SettingsPanel() {
   const usage = useQuery({ queryKey: ["usage"], queryFn: api.usage });
   const patch = useMutation({ mutationFn: api.patchSettings, onSuccess: (d) => qc.setQueryData(["settings"], d) });
   const balance = useMutation({ mutationFn: api.refreshBalance, onSuccess: () => qc.invalidateQueries({ queryKey: ["usage"] }) });
+  const verify = useMutation({
+    mutationFn: api.verifyFree,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["settings"] });
+      void qc.invalidateQueries({ queryKey: ["usage"] });
+    },
+  });
   const s = settings.data;
   const u = usage.data;
 
@@ -39,6 +46,24 @@ export function SettingsPanel() {
           <Selector title="Writers' room (LLM) for new cases" options={LLM} value={s.defaults.llm} status={s.providers.llm}
             onPick={(v) => patch.mutate({ default_llm_provider: v })} />
           {patch.isError && <p className="text-sm text-burgundy-bright">{(patch.error as Error).message}</p>}
+          <div className="flex flex-wrap items-center gap-3 rounded-2xl border hairline bg-ink-2 p-5">
+            <div className="min-w-0 flex-1">
+              <div className="eyebrow">S2.1 Pro Free verification</div>
+              <p className="mt-1 text-sm text-mute">
+                Checks your balance, makes one tiny free call, checks again. Free voices unlock only if the credit didn&apos;t move.
+              </p>
+              {verify.data && (
+                <p className={cn("mt-2 text-sm", verify.data.verified ? "text-[#5aa39c]" : "text-burgundy-bright")}>
+                  {verify.data.verified ? "Verified free" : "Credit changed — free tier NOT enabled"} · ${verify.data.credit_before} → ${verify.data.credit_after}
+                </p>
+              )}
+              {verify.isError && <p className="mt-2 text-sm text-burgundy-bright">{(verify.error as Error).message}</p>}
+            </div>
+            <button onClick={() => verify.mutate()} disabled={verify.isPending}
+              className="rounded-full border border-line-strong px-4 py-2 text-sm hover:bg-white/5 disabled:opacity-50">
+              {verify.isPending ? "Verifying…" : "Verify free tier"}
+            </button>
+          </div>
         </>
       )}
       {u && (
