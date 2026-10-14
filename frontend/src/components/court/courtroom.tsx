@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { CourtroomStage } from "@/components/court/courtroom-stage";
+import { StageSwitch, useStageMode } from "@/components/court3d/stage-switch";
 import type { Mode } from "@/lib/types";
 import { cn, PHASE_LABEL } from "@/lib/utils";
 import { usePlayer } from "@/stores/player";
@@ -23,6 +23,8 @@ export function Courtroom({ caseRef, mode }: { caseRef: string; mode: Mode }) {
   const loaded = usePlayer((s) => s.loaded);
   const toLoad = usePlayer((s) => s.toLoad);
   const error = usePlayer((s) => s.error);
+  const burst = usePlayer((s) => s.burst);
+  const [stageMode, setStageMode, can3d] = useStageMode();
   const [startedAt, setStartedAt] = useState(() => Date.now());
 
   const scene = manifest?.scenes.find((s) => s.key === sceneKey);
@@ -62,13 +64,27 @@ export function Courtroom({ caseRef, mode }: { caseRef: string; mode: Mode }) {
             {PHASE_LABEL[session?.phase ?? "COURTROOM_READY"]}
           </span>
           <span className="rounded-full border border-line px-3 py-1.5 text-mute">{mode} mode</span>
+          {can3d && (
+            <div className="flex rounded-full border border-line p-0.5" role="radiogroup" aria-label="Stage view">
+              {(["3d", "2d"] as const).map((m) => (
+                <button key={m} role="radio" aria-checked={stageMode === m} onClick={() => setStageMode(m)}
+                  className={cn("rounded-full px-2.5 py-1 transition-colors", stageMode === m ? "bg-ivory text-ink" : "text-mute hover:text-ivory")}>
+                  {m.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </header>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
         <div className="overflow-hidden rounded-[20px] border hairline bg-ink-2">
           <div className="mx-auto w-full lg:max-w-[calc((100vh-330px)*1.7778)]">
-          <CourtroomStage
+          <StageSwitch
+            mode={stageMode}
+            burst={burst}
+            verdict={session?.phase === "VERDICT" && seg?.speaker === "judge"}
+            segmentKind={seg?.kind}
             characters={manifest.characters}
             speaker={seg?.speaker ?? null}
             emotion={seg?.emotion}
@@ -100,7 +116,7 @@ export function Courtroom({ caseRef, mode }: { caseRef: string; mode: Mode }) {
                 </motion.div>
               )}
             </AnimatePresence>
-          </CourtroomStage>
+          </StageSwitch>
           </div>
           <div className="relative">
             <DialogueSubtitle characters={manifest.characters} />

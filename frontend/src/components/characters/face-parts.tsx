@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { createContext, useContext, useEffect, useRef } from "react";
 import type { Expression } from "./palette";
 
 export type AmplitudeSource = () => number;
+
+/** When rasterising portraits into 3D textures: no CSS-animated lids, mouth optional. */
+export const RasterContext = createContext<{ raster: boolean; mouth: boolean }>({ raster: false, mouth: true });
 
 /** Drives a mouth's openness straight from the audio analyser — no React renders per frame. */
 export function useMouth(source: AmplitudeSource | null, speaking: boolean, base: number, range: number) {
@@ -54,6 +57,16 @@ export function Eye({ cx, cy, expression, side, white, pupil, glow }: EyeProps) 
       {!glow && <circle cx={cx + look} cy={cy + (expression === "sad" ? 1 : 0)} r={big ? 2.6 : 3} fill={pupil} />}
       {!glow && <circle cx={cx + look + 1} cy={cy - 1} r={0.9} fill="#fff" opacity={0.8} />}
       {/* eyelid for blinking */}
+      <Lid cx={cx} cy={cy} rx={rx} ry={ry} />
+    </g>
+  );
+}
+
+function Lid({ cx, cy, rx, ry }: { cx: number; cy: number; rx: number; ry: number }) {
+  const { raster } = useContext(RasterContext);
+  if (raster) return null;
+  return (
+    <g>
       <rect className="lid" x={cx - rx - 1} y={cy - ry - 1} width={rx * 2 + 2} height={ry * 2 + 2} fill="currentColor" />
     </g>
   );
@@ -102,6 +115,8 @@ export function Mouth({ cx, cy, expression, color, speaking, mouthRef, width = 9
   cx: number; cy: number; expression: Expression; color: string; speaking: boolean;
   mouthRef: React.Ref<SVGEllipseElement>; width?: number;
 }) {
+  const { mouth } = useContext(RasterContext);
+  if (!mouth) return null;
   if (speaking) {
     return <ellipse ref={mouthRef} cx={cx} cy={cy} rx={width} ry={1.5} fill={color} />;
   }

@@ -19,6 +19,13 @@ const SHAPE_HINTS: [RegExp, Shape][] = [
   [/sense|nerve|feeling|vibe|night|concept/i, "orb"],
 ];
 
+/** Where the mouth sits (SVG units, viewBox 200×220) — used by the 3D standee's animated mouth. */
+export function objectMouth(name: string, glyph: string) {
+  const shape = shapeFor(name, glyph);
+  const y = (shape === "clock" || shape === "orb" ? 104 : shape === "calendar" ? 118 : 102) + 14;
+  return { x: 100, y, rx: 8, color: "#f5f0e6", glow: true };
+}
+
 export function shapeFor(name: string, glyph: string): Shape {
   for (const [re, shape] of SHAPE_HINTS) if (re.test(name) || re.test(glyph)) return shape;
   return "block";
