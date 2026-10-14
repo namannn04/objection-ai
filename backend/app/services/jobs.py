@@ -93,7 +93,8 @@ async def recover_stale(minutes: int = 15) -> None:
 
 
 async def worker_loop(stop: asyncio.Event, concurrency: int = 2) -> None:
-    import app.services.intervention_service  # noqa: F401  (registers handlers)
+    import app.services.intervention_service  # noqa: F401
+    import app.services.podcast_service  # noqa: F401  (registers handlers)
     import app.services.pipeline  # noqa: F401
 
     await recover_stale()

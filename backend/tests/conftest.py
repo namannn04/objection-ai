@@ -51,6 +51,7 @@ async def client():
 async def run_pending_jobs() -> None:
     """Drain the job queue in-process (the worker is disabled in tests)."""
     import app.services.intervention_service  # noqa: F401
+    import app.services.podcast_service  # noqa: F401
     import app.services.pipeline  # noqa: F401
     from app.models import AudioGenerationJob
     from app.services.jobs import run_job

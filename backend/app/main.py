@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api.routes import cases, sessions, system
+from app.api.routes import cases, podcasts, sessions, system
 from app.config import get_settings
 from app.services.audio_generation import FIXTURE_DIR, ensure_sfx_fixtures
 
@@ -44,6 +44,7 @@ def create_app() -> FastAPI:
     app.include_router(cases.router)
     app.include_router(sessions.router)
     app.include_router(system.router)
+    app.include_router(podcasts.router)
     app.mount("/media/audio", StaticFiles(directory=cfg.audio_dir), name="audio")
     app.mount("/media/exports", StaticFiles(directory=cfg.export_dir), name="exports")
     FIXTURE_DIR.mkdir(parents=True, exist_ok=True)

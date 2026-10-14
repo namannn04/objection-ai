@@ -225,7 +225,12 @@ export function useCourtroom(caseRef: string, mode: Mode) {
   const jumpLine = useCallback((delta: -1 | 0 | 1) => {
     const tl = timeline.current;
     if (!tl) return;
-    const i = Math.max(0, Math.min(tl.items.length - 1, usePlayer.getState().segIndex + delta));
+    const cur = usePlayer.getState().segIndex;
+    if (delta === 1 && cur >= tl.items.length - 1) {
+      seek(tl.duration - 0.05); // skipping past the last line finishes the scene
+      return;
+    }
+    const i = Math.max(0, Math.min(tl.items.length - 1, cur + delta));
     seek(tl.items[i].start - 0.05);
   }, [seek]);
 

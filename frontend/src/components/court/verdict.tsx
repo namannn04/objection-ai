@@ -56,7 +56,7 @@ export function VerdictCard({ verdict, manifest, mode, startedAt, onReplay }: {
   };
   return (
     <motion.div
-      className="fixed inset-0 z-50 overflow-y-auto bg-ink/90 backdrop-blur-md"
+      className="fixed inset-0 z-50 overflow-y-auto bg-ink/[0.97] backdrop-blur-md"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}

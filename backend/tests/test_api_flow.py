@@ -170,3 +170,20 @@ async def test_free_text_rejected_outside_chaos(client, drain):
     await _post(client, f"/api/sessions/{sid}/scenes/s01/complete")
     r = await _post(client, f"/api/sessions/{sid}/windows/s01/intervene", {"text": "Objection!"})
     assert r.status_code == 403
+
+
+async def test_podcast_export(client, drain):
+    case_id = await _ready_case(client, drain)
+    r = await _post(client, f"/api/cases/{case_id}/podcast", {"verdict": "guilty"})
+    assert r.status_code == 200, r.text
+    await drain()
+    ep = (await client.get(f"/api/podcasts/{r.json()['id']}")).json()
+    assert ep["status"] == "ready" and ep["verdict"] == "guilty"
+    assert ep["duration_ms"] > 60_000
+    assert ep["chapters"][0]["start_ms"] >= 2000 and ep["chapters"][-1]["phase"] == "Verdict"
+    t = ep["transcript"]
+    assert all(a["end_ms"] <= b["start_ms"] for a, b in zip(t, t[1:]))
+    assert t[-1]["end_ms"] < ep["duration_ms"]
+    mp3 = await client.get(ep["mp3_url"])
+    assert mp3.status_code == 200 and len(mp3.content) > 100_000
+    assert (await client.get(ep["wav_url"])).status_code == 200
