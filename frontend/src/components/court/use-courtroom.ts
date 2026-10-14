@@ -34,8 +34,12 @@ export function useCourtroom(caseRef: string, mode: Mode) {
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const sessionRef = useRef<SessionState | null>(null);
   const manifestRef = useRef<Manifest | null>(null);
-  sessionRef.current = session;
-  manifestRef.current = manifest;
+  useEffect(() => {
+    sessionRef.current = session;
+  }, [session]);
+  useEffect(() => {
+    manifestRef.current = manifest;
+  }, [manifest]);
 
   const fail = useCallback((e: unknown) => set({ status: "failed", error: e instanceof Error ? e.message : String(e) }), [set]);
 
@@ -46,6 +50,8 @@ export function useCourtroom(caseRef: string, mode: Mode) {
     api.openSession(caseRef, mode).then(
       (r) => {
         if (!alive) return;
+        sessionRef.current = r.state;
+        manifestRef.current = r.manifest;
         setSession(r.state);
         setManifest(r.manifest);
         set({ status: "ready" });
@@ -97,6 +103,7 @@ export function useCourtroom(caseRef: string, mode: Mode) {
 
   const route = useCallback(
     async (st: SessionState) => {
+      sessionRef.current = st;
       setSession(st);
       if (st.phase === "CASE_COMPLETED") {
         set({ status: "completed", segment: null });

@@ -144,9 +144,12 @@ export function ObjectionBurst() {
   const [show, setShow] = useState(false);
   useEffect(() => {
     if (!burst) return;
-    setShow(true);
-    const t = setTimeout(() => setShow(false), 950);
-    return () => clearTimeout(t);
+    const on = setTimeout(() => setShow(true), 0);
+    const off = setTimeout(() => setShow(false), 950);
+    return () => {
+      clearTimeout(on);
+      clearTimeout(off);
+    };
   }, [burst]);
   return (
     <AnimatePresence>

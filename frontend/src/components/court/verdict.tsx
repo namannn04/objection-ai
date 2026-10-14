@@ -43,7 +43,7 @@ export function VerdictCard({ verdict, manifest, mode, startedAt, onReplay }: {
   const [copied, setCopied] = useState(false);
   const name = (k: string) => manifest.characters.find((c) => c.key === k)?.name ?? k;
   const jury = verdict.scoreboard.jury;
-  const duration = Date.now() - startedAt;
+  const [duration] = useState(() => Date.now() - startedAt);
   const share = async () => {
     const url = `${window.location.origin}/case/${manifest.case.slug}`;
     try {

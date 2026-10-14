@@ -94,7 +94,7 @@ export function CourtroomStage({
                   isSpeaking ? "border-gold" : "border-line-strong")}>
                   <div className="h-[118%] w-full translate-y-[2%]">{portrait}</div>
                 </div>
-                <div className="mt-1.5 flex items-center justify-center gap-1 font-mono text-[8px] tracking-[0.2em] text-mute sm:text-[9px]">
+                <div className="mt-1.5 flex items-center justify-center gap-1 whitespace-nowrap font-mono text-[7px] tracking-[0.2em] text-mute sm:text-[9px]">
                   <span className={cn("h-1.5 w-1.5 rounded-full", live ? "bg-burgundy-bright animate-blink" : "bg-mute")} />ON AIR
                 </div>
               </div>

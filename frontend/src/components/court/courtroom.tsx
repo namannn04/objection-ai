@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
-import { useMemo, useRef } from "react";
+import { useMemo, useState } from "react";
 import { CourtroomStage } from "@/components/court/courtroom-stage";
 import type { Mode } from "@/lib/types";
 import { cn, PHASE_LABEL } from "@/lib/utils";
@@ -23,7 +23,7 @@ export function Courtroom({ caseRef, mode }: { caseRef: string; mode: Mode }) {
   const loaded = usePlayer((s) => s.loaded);
   const toLoad = usePlayer((s) => s.toLoad);
   const error = usePlayer((s) => s.error);
-  const started = useRef(Date.now());
+  const [startedAt, setStartedAt] = useState(() => Date.now());
 
   const scene = manifest?.scenes.find((s) => s.key === sceneKey);
   const witnessKey = useMemo(() => {
@@ -133,8 +133,8 @@ export function Courtroom({ caseRef, mode }: { caseRef: string; mode: Mode }) {
       </div>
 
       {status === "completed" && session?.verdict && (
-        <VerdictCard verdict={session.verdict} manifest={manifest} mode={mode} startedAt={started.current}
-          onReplay={(m) => { started.current = Date.now(); void c.replay(m); }} />
+        <VerdictCard verdict={session.verdict} manifest={manifest} mode={mode} startedAt={startedAt}
+          onReplay={(m) => { setStartedAt(Date.now()); void c.replay(m); }} />
       )}
     </div>
   );
