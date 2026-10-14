@@ -58,13 +58,13 @@ class Fallback extends Component<{ fallback: ReactNode; children: ReactNode }, {
   }
 }
 
-export function StageSwitch({ mode, ...props }: StageProps & Pick<Courtroom3DProps, "burst" | "verdict" | "segmentKind" | "showcase"> & { mode: StageMode }) {
-  const { burst, verdict, segmentKind, showcase, ...flat } = props;
+export function StageSwitch({ mode, ...props }: StageProps & Pick<Courtroom3DProps, "burst" | "gavel" | "celebrate" | "verdict" | "segmentKind" | "showcase"> & { mode: StageMode }) {
+  const { burst, gavel, celebrate, verdict, segmentKind, showcase, ...flat } = props;
   const flatStage = <CourtroomStage {...flat} />;
   if (mode === "2d") return flatStage;
   return (
     <Fallback fallback={flatStage}>
-      <Courtroom3D {...flat} burst={burst} verdict={verdict} segmentKind={segmentKind} showcase={showcase} />
+      <Courtroom3D {...flat} burst={burst} gavel={gavel} celebrate={celebrate} verdict={verdict} segmentKind={segmentKind} showcase={showcase} />
     </Fallback>
   );
 }

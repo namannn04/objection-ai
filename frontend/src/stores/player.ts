@@ -21,6 +21,7 @@ interface PlayerState {
   reactions: Record<string, Reaction>;
   evidenceId: string | null;
   burst: number; // increments to trigger the OBJECTION! burst
+  gavel: number; // increments on every gavel strike
   titleCard: { phase: string; title: string } | null;
   verdictStamp: boolean;
   volume: number;
@@ -44,6 +45,7 @@ export const usePlayer = create<PlayerState>((set) => ({
   reactions: {},
   evidenceId: null,
   burst: 0,
+  gavel: 0,
   titleCard: null,
   verdictStamp: false,
   volume: 0.9,

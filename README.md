@@ -46,7 +46,7 @@ docker compose up --build    # web :3000, API :8000, worker, Postgres :5434, Red
 
 | | |
 |---|---|
-| **Frontend** | Next.js 16 (App Router), TypeScript, Tailwind v4, Motion, Zustand, TanStack Query, React Hook Form + Zod, Wavesurfer.js, Lucide |
+| **Frontend** | Next.js 16 (App Router), TypeScript, Tailwind v4, React Three Fiber + drei + postprocessing, Motion, Zustand, TanStack Query, React Hook Form + Zod, Wavesurfer.js, Lucide |
 | **Backend** | FastAPI, Pydantic, LangGraph, SQLAlchemy 2 + Alembic, PostgreSQL, Redis (pub/sub + coordination), FFmpeg |
 | **Jobs** | DB-backed queue (`SELECT … FOR UPDATE SKIP LOCKED`), in-process or `python -m app.worker` |
 | **LLM** | `mock` (offline) · `ollama` (local) · `anthropic` (Claude), all with structured outputs and scripted fallback |
@@ -58,7 +58,13 @@ For design notes, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). The verified
 
 1. **File a case** at `/file`. It's three short steps: the accused, the crime, then intensity, drama meter, length and your role.
 2. **Case preparation.** The agents plan and write the trial live. The *rehearsal room* streams each line as its character writes it, over SSE. The rotating jokes run only while a job is actually running.
-3. **The courtroom.** Lines play gaplessly. The speaker is spotlit, the subtitles are word-synced, characters react, and exhibits fly in. The surprise witness and the plot twist each get their moment.
+3. **The courtroom — in 3D.** A noir "paper-theatre" courtroom built with React Three Fiber: walnut panelling, a
+   reflective marble floor, window light shafts, a glowing court seal, a jury box of silhouettes with one empty gold
+   seat labelled **YOU**. Characters are illustrated cut-outs lit by the room (with real cut-out shadows); their
+   mouths move with the voice. A camera director cuts between composed shots of whoever is speaking, whips and shakes
+   on **OBJECTION!**, slams the gavel on every strike, pushes in on the judge for the verdict, and rains case papers
+   when it lands. A 2D stage is the automatic fallback (no WebGL / reduced motion) and a 3D/2D toggle is always there.
+   Lines play gaplessly. The speaker is spotlit, the subtitles are word-synced, characters react, and exhibits fly in. The surprise witness and the plot twist each get their moment.
 4. **The jury speaks.** There are controlled windows for an opening vote, an objection (the **OBJECTION!** button), a question to the witness, and the final vote. All responses are pre-generated, so choices play instantly. In **chaos mode** you can type your own intervention, which the agents answer live.
 5. **The verdict** is computed from the record (argument points, evidence strength and your input) and then performed: the stamp, the sentence, highlights, the jury tally, sharing and a replay with a different verdict.
 6. **Podcast mode** (`/podcast/<case>`) gives you the whole trial mixed into MP3/WAV, with chapters, a following transcript, speed control and an episode history.

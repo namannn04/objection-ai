@@ -30,6 +30,7 @@ export function useCourtroom(caseRef: string, mode: Mode) {
   const queueKind = useRef<"scene" | "response" | null>(null);
   const busy = useRef(false);
   const lastBurstSeg = useRef<string | null>(null);
+  const lastGavelAt = useRef(-1);
   const [session, setSession] = useState<SessionState | null>(null);
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const sessionRef = useRef<SessionState | null>(null);
@@ -79,6 +80,7 @@ export function useCourtroom(caseRef: string, mode: Mode) {
       timeline.current = tl;
       queueKind.current = kind;
       lastBurstSeg.current = null;
+      lastGavelAt.current = -1;
       set({ sceneKey: scene.key, sceneTitle: scene.title, queueKind: kind, duration: tl.duration, position: 0, segIndex: -1, segment: null, status: "playing" });
       await eng.resume();
       eng.play(tl, segUrl, 0);
@@ -174,6 +176,12 @@ export function useCourtroom(caseRef: string, mode: Mode) {
         patch.burst = st.burst + 1;
       }
       if (item && item.seg.kind === "verdict" && after > 0 && !st.verdictStamp) patch.verdictStamp = true;
+      for (const cue of tl.cues) {
+        if (cue.name === "gavel" && cue.at > lastGavelAt.current && cue.at <= pos && pos - cue.at < 0.5) {
+          lastGavelAt.current = cue.at;
+          patch.gavel = st.gavel + 1;
+        }
+      }
       if (Math.abs(pos - lastPos) > 0.1) {
         patch.position = Math.min(pos, tl.duration);
         lastPos = pos;

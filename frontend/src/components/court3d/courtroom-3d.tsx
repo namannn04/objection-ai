@@ -10,6 +10,7 @@ import { CharacterPortrait } from "@/components/characters/character-portrait";
 import type { AmplitudeSource } from "@/components/characters/face-parts";
 import type { CharacterInfo, Reaction } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { PaperRain } from "./paper-rain";
 import { CourtroomSet } from "./set";
 import { Standee } from "./standee";
 
@@ -34,7 +35,7 @@ const SHOTS: Record<Seat | "wide" | "verdict" | "objection", Shot> = {
   defendant: { pos: [-1.1, 1.85, 6.4], look: [0, 1.5, 0.5], fov: 38 },
   prosecutor: { pos: [-0.8, 2.15, 7.4], look: [-3.7, 2.0, 1.6], fov: 38 },
   defense: { pos: [0.8, 2.15, 7.4], look: [3.7, 2.0, 1.6], fov: 38 },
-  verdict: { pos: [0, 3.0, -0.6], look: [0, 3.05, -5.1], fov: 32 },
+  verdict: { pos: [0, 3.75, -1.7], look: [0, 3.0, -5.1], fov: 34 },
   objection: { pos: [0, 2.3, 6.6], look: [0, 1.8, -1], fov: 52 },
 };
 
@@ -52,6 +53,8 @@ export interface Courtroom3DProps {
   amplitude?: AmplitudeSource | null;
   witnessKey?: string | null;
   burst?: number;
+  gavel?: number;
+  celebrate?: boolean;
   verdict?: boolean;
   segmentKind?: string;
   caseNumber?: string;
@@ -145,7 +148,7 @@ function Lighting({ speakerSeat }: { speakerSeat: Seat | null }) {
   );
 }
 
-function Scene({ characters, speaker, emotion, reactions = {}, amplitude = null, witnessKey, burst = 0, verdict = false, showcase = false, reflections }: Courtroom3DProps & { reflections: boolean }) {
+function Scene({ characters, speaker, emotion, reactions = {}, amplitude = null, witnessKey, burst = 0, gavel = 0, celebrate = false, verdict = false, showcase = false, reflections }: Courtroom3DProps & { reflections: boolean }) {
   const witness = witnessKey ?? characters.find((c) => c.role === "witness" && !c.surprise)?.key ?? null;
   const placed = characters
     .map((c) => ({ c, seat: seatOf(c, witness) }))
@@ -157,7 +160,8 @@ function Scene({ characters, speaker, emotion, reactions = {}, amplitude = null,
       <fog attach="fog" args={["#070606", 14, 32]} />
       <Lighting speakerSeat={active} />
       <Director speakerSeat={active} burst={burst} verdict={verdict} showcase={showcase} />
-      <CourtroomSet reflections={reflections} />
+      <CourtroomSet reflections={reflections} gavel={gavel} />
+      <PaperRain active={celebrate} />
       {placed.map(({ c, seat }, i) => {
         const s = SEATS[seat];
         return (

@@ -24,6 +24,8 @@ export function Courtroom({ caseRef, mode }: { caseRef: string; mode: Mode }) {
   const toLoad = usePlayer((s) => s.toLoad);
   const error = usePlayer((s) => s.error);
   const burst = usePlayer((s) => s.burst);
+  const gavel = usePlayer((s) => s.gavel);
+  const verdictStamp = usePlayer((s) => s.verdictStamp);
   const [stageMode, setStageMode, can3d] = useStageMode();
   const [startedAt, setStartedAt] = useState(() => Date.now());
 
@@ -83,6 +85,8 @@ export function Courtroom({ caseRef, mode }: { caseRef: string; mode: Mode }) {
           <StageSwitch
             mode={stageMode}
             burst={burst}
+            gavel={gavel}
+            celebrate={verdictStamp}
             verdict={session?.phase === "VERDICT" && seg?.speaker === "judge"}
             segmentKind={seg?.kind}
             characters={manifest.characters}

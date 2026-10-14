@@ -185,7 +185,47 @@ function JuryBox({ mats }: { mats: ReturnType<typeof useMats> }) {
   );
 }
 
-export function CourtroomSet({ reflections = true }: { reflections?: boolean }) {
+/** The gavel lifts and slams on every strike. */
+function Gavel({ strikes }: { strikes: number }) {
+  const arm = useRef<THREE.Group>(null);
+  const last = useRef(strikes);
+  const t = useRef(1);
+  useFrame((_, dt) => {
+    if (strikes !== last.current) {
+      last.current = strikes;
+      t.current = 0;
+    }
+    t.current = Math.min(1, t.current + dt * 2.4);
+    // 0→0.35 wind up, 0.35→0.5 slam, then settle
+    const p = t.current;
+    const angle = p < 0.35 ? (p / 0.35) * 0.9 : p < 0.5 ? 0.9 - ((p - 0.35) / 0.15) * 0.95 : -0.05 * (1 - p);
+    if (arm.current) arm.current.rotation.z = angle;
+  });
+  return (
+    <group position={[2.15, 2.14, -4.6]} rotation={[0, 0.4, 0]}>
+      <mesh position={[0, -0.005, 0]} receiveShadow>
+        <cylinderGeometry args={[0.16, 0.18, 0.04, 24]} />
+        <meshStandardMaterial color="#2a1a10" roughness={0.4} />
+      </mesh>
+      <group ref={arm} position={[0.42, 0.05, 0]}>
+        <mesh position={[-0.2, 0, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
+          <cylinderGeometry args={[0.022, 0.026, 0.42, 10]} />
+          <meshStandardMaterial color="#3a2414" roughness={0.4} />
+        </mesh>
+        <mesh position={[-0.42, 0.02, 0]} castShadow>
+          <cylinderGeometry args={[0.07, 0.07, 0.24, 18]} />
+          <meshStandardMaterial color="#3a2414" roughness={0.35} />
+        </mesh>
+        <mesh position={[-0.42, 0.02, 0]}>
+          <cylinderGeometry args={[0.072, 0.072, 0.03, 18]} />
+          <meshStandardMaterial color="#d6ae62" metalness={0.85} roughness={0.3} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+export function CourtroomSet({ reflections = true, gavel = 0 }: { reflections?: boolean; gavel?: number }) {
   const mats = useMats();
   const marble = useMemo(() => marbleTexture(), []);
   const seal = useMemo(() => sealTexture(), []);
@@ -231,14 +271,7 @@ export function CourtroomSet({ reflections = true }: { reflections?: boolean }) 
       <Box args={[7.6, 0.7, 2.8]} position={[0, 0.35, -5.6]} material={mats.darkWood} />
       <Box args={[7.7, 0.05, 2.9]} position={[0, 0.72, -5.6]} material={mats.gold} cast={false} />
       <Paneled w={5.8} h={1.35} d={0.55} position={[0, 0.7, -4.45]} label="Hon. A. Gravel" mats={mats} />
-      <mesh position={[1.9, 2.18, -4.6]} rotation={[0, 0.4, Math.PI / 2]} castShadow>
-        <cylinderGeometry args={[0.07, 0.07, 0.36, 14]} />
-        <meshStandardMaterial color="#3a2414" roughness={0.4} />
-      </mesh>
-      <mesh position={[1.9, 2.13, -4.6]} rotation={[0, 0.4, 0]} castShadow>
-        <cylinderGeometry args={[0.025, 0.025, 0.5, 8]} />
-        <meshStandardMaterial color="#3a2414" roughness={0.4} />
-      </mesh>
+      <Gavel strikes={gavel} />
 
       {/* witness box */}
       <Box args={[2.3, 0.5, 1.8]} position={[4.2, 0.25, -3.7]} material={mats.darkWood} />
