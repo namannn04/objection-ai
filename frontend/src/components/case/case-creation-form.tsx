@@ -199,6 +199,7 @@ export function CaseCreationForm() {
                     </p>
                   )}
                 </div>
+                <div className="flex flex-col items-end gap-1">
                 <select
                   {...form.register("language")}
                   className="rounded-lg border border-line-strong bg-ink px-3 py-2 text-sm text-ivory"
@@ -211,6 +212,10 @@ export function CaseCreationForm() {
                   <option value="hi">हिन्दी</option>
                   <option value="ja">日本語</option>
                 </select>
+                {values.language !== "en" && settings.data?.defaults.llm === "mock" && (
+                  <span className="max-w-[220px] text-right text-[11px] text-mute">The offline engine writes in English. Pick Ollama or Claude in Settings for other languages.</span>
+                )}
+                </div>
               </div>
             </div>
           )}

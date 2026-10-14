@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useState } from "react";
+import { mediaUrl } from "@/lib/api";
 import type { Manifest, Mode, Verdict } from "@/lib/types";
 import { cn, formatMs } from "@/lib/utils";
 import { usePlayer } from "@/stores/player";
@@ -88,12 +89,23 @@ export function VerdictCard({ verdict, manifest, mode, startedAt, onReplay }: {
         <div className="mt-14">
           <div className="eyebrow">Courtroom highlights</div>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
-            {Object.entries(verdict.highlights).filter(([, h]) => h).map(([k, h]) => (
-              <figure key={k} className="rounded-2xl border hairline bg-ink-2 p-5">
-                <figcaption className="font-mono text-[10px] uppercase tracking-[0.18em] text-gold">{HIGHLIGHT_LABEL[k] ?? k} · {name(h!.speaker)}</figcaption>
-                <blockquote className="mt-2 font-display text-xl leading-snug">“{h!.text}”</blockquote>
-              </figure>
-            ))}
+            {Object.entries(verdict.highlights).filter(([, h]) => h).map(([k, h]) => {
+              const clip = manifest.scenes.flatMap((sc) => sc.segments).find((x) => x.turn_key === h!.turn_key)?.audio?.url;
+              return (
+                <figure key={k} className="rounded-2xl border hairline bg-ink-2 p-5">
+                  <figcaption className="flex items-center justify-between gap-3 font-mono text-[10px] uppercase tracking-[0.18em] text-gold">
+                    <span>{HIGHLIGHT_LABEL[k] ?? k} · {name(h!.speaker)}</span>
+                    {clip && (
+                      <span className="flex shrink-0 gap-3 text-mute">
+                        <button onClick={() => void new Audio(mediaUrl(clip)).play()} className="hover:text-ivory">▶ Play</button>
+                        <a href={mediaUrl(clip)} download className="hover:text-ivory">Clip ↓</a>
+                      </span>
+                    )}
+                  </figcaption>
+                  <blockquote className="mt-2 font-display text-xl leading-snug">“{h!.text}”</blockquote>
+                </figure>
+              );
+            })}
           </div>
         </div>
         <div className="mt-14 flex flex-wrap items-center gap-3">
