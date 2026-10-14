@@ -146,8 +146,15 @@ async def run_intervention(s: AsyncSession, job: AudioGenerationJob, progress) -
     svc = AudioGenerationService(get_audio_provider(settings, case.audio_provider))
     rep = await svc.prepare(s, case, rows, progress)
     audio_source = case.audio_provider
+    if not rep.complete and case.audio_provider != "fish-free":
+        # Paid audio not permitted (or failed): try real free voices first.
+        from app.services.settings_service import provider_status
+
+        if (await provider_status(s))["audio"]["fish-free"]["available"]:
+            rep = await AudioGenerationService(get_audio_provider(settings, "fish-free")).prepare(s, case, rows, progress)
+            audio_source = "fish-free-fallback"
     if not rep.complete:
-        # Paid audio not permitted (or failed): voice it locally and say so.
+        # Last resort so the trial never stalls: placeholder voices, clearly labelled.
         rep = await AudioGenerationService(get_audio_provider(settings, "mock")).prepare(s, case, rows, progress)
         audio_source = "mock-fallback"
     side = ruling.favours if ruling.favours in ("prosecution", "defense") else None

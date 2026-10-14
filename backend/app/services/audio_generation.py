@@ -181,7 +181,7 @@ class AudioGenerationService:
                 planned_chars += req.characters
                 planned_cost += d.cost_usd
 
-        sem = asyncio.Semaphore(3 if billable else 6)
+        sem = asyncio.Semaphore(6 if self.provider.name == "mock" else 3)  # Fish: max 5 concurrent per account
         stop = asyncio.Event()
         done = rep.cached
 
