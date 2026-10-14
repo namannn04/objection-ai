@@ -1,0 +1,66 @@
+name: objection-ai
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: objection
+      POSTGRES_PASSWORD: objection
+      POSTGRES_DB: objection
+    ports: ["5434:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U objection"]
+      interval: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6381:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      retries: 20
+
+  backend:
+    build: ./backend
+    env_file: [{ path: .env, required: false }]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://objection:objection@postgres:5432/objection
+      REDIS_URL: redis://redis:6379/0
+      STORAGE_DIR: /data/storage
+      RUN_WORKER_IN_PROCESS: "false"
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    command: sh -c "alembic upgrade head && python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    ports: ["8000:8000"]
+    volumes: [storage:/data/storage]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  worker:
+    build: ./backend
+    env_file: [{ path: .env, required: false }]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://objection:objection@postgres:5432/objection
+      REDIS_URL: redis://redis:6379/0
+      STORAGE_DIR: /data/storage
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    command: python -m app.worker
+    volumes: [storage:/data/storage]
+    depends_on:
+      backend: { condition: service_started }
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports: ["3000:3000"]
+    depends_on: [backend]
+
+volumes:
+  pgdata:
+  storage:

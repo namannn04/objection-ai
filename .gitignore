@@ -1,0 +1,31 @@
+# env
+.env
+.env.local
+*.local
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# runtime data (generated media, sqlite dev db)
+storage/
+*.db
+*.sqlite3
+
+# playwright
+playwright-report/
+test-results/
+
+.DS_Store
