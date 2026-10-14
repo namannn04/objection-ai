@@ -7,7 +7,8 @@ import { StageSwitch, useStageMode } from "@/components/court3d/stage-switch";
 import type { Mode } from "@/lib/types";
 import { cn, PHASE_LABEL } from "@/lib/utils";
 import { usePlayer } from "@/stores/player";
-import { AudioTimeline, DialogueSubtitle, ObjectionBurst, SceneTitleCard, StageExhibit } from "./hud";
+import { ObjectionBurst, SceneTitleCard, StageExhibit } from "./hud";
+import { SceneProgress, StageCaptions, StageControls, WaitingNote, useCourtKeys } from "./stage-hud";
 import { InterventionPanel, ObjectionButton } from "./interventions";
 import { SidePanel } from "./side-panel";
 import { useCourtroom } from "./use-courtroom";
@@ -27,6 +28,7 @@ export function Courtroom({ caseRef, mode }: { caseRef: string; mode: Mode }) {
   const gavel = usePlayer((s) => s.gavel);
   const verdictStamp = usePlayer((s) => s.verdictStamp);
   const [stageMode, setStageMode, can3d] = useStageMode();
+  useCourtKeys(c.togglePause, c.jumpLine);
   const [startedAt, setStartedAt] = useState(() => Date.now());
 
   const scene = manifest?.scenes.find((s) => s.key === sceneKey);
@@ -79,9 +81,9 @@ export function Courtroom({ caseRef, mode }: { caseRef: string; mode: Mode }) {
         </div>
       </header>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
-        <div className="overflow-hidden rounded-[20px] border hairline bg-ink-2">
-          <div className="mx-auto w-full lg:max-w-[calc((100vh-330px)*1.7778)]">
+      <div className="grid items-start gap-4 lg:grid-cols-[1fr_320px]">
+        <div className="overflow-hidden rounded-[20px] border hairline bg-black shadow-[0_40px_120px_-40px_rgba(0,0,0,0.9)]">
+          <div className="mx-auto w-full lg:max-w-[calc((100vh-190px)*1.7778)]">
           <StageSwitch
             mode={stageMode}
             burst={burst}
@@ -95,7 +97,6 @@ export function Courtroom({ caseRef, mode }: { caseRef: string; mode: Mode }) {
             reactions={reactions}
             amplitude={c.amplitude}
             witnessKey={witnessKey}
-            caseNumber={manifest.case.case_number}
             className="rounded-none border-0"
             live={status === "playing"}
           >
@@ -103,6 +104,28 @@ export function Courtroom({ caseRef, mode }: { caseRef: string; mode: Mode }) {
             <StageExhibit evidence={manifest.evidence} />
             <ObjectionBurst />
             <VerdictReveal verdict={session?.verdict ?? null} />
+            <StageCaptions characters={manifest.characters} hidden={showWindow} />
+            <WaitingNote />
+            <SceneProgress />
+            {!ready && (
+              <div className="absolute right-[2.5%] top-[3.5%] z-[14]">
+                <StageControls onToggle={c.togglePause} onJump={c.jumpLine} onVolume={c.setVolume} />
+              </div>
+            )}
+            <AnimatePresence>
+              {showWindow && openWindowScene?.window && (
+                <div className="absolute inset-x-[3%] bottom-[4%] z-[15]">
+                  <InterventionPanel
+                    key={openWindowScene.key}
+                    window={openWindowScene.window}
+                    mode={mode}
+                    onChoose={c.choose}
+                    onSkip={c.skipWindow}
+                    onFreeText={c.intervene}
+                  />
+                </div>
+              )}
+            </AnimatePresence>
             <AnimatePresence>
               {ready && (
                 <motion.div className="absolute inset-0 grid place-items-center bg-ink/75 backdrop-blur-[2px]" exit={{ opacity: 0 }}>
@@ -122,27 +145,9 @@ export function Courtroom({ caseRef, mode }: { caseRef: string; mode: Mode }) {
             </AnimatePresence>
           </StageSwitch>
           </div>
-          <div className="relative">
-            <DialogueSubtitle characters={manifest.characters} />
-            <AnimatePresence>
-              {showWindow && openWindowScene?.window && (
-                <div className="absolute inset-x-3 bottom-3 z-10 sm:inset-x-5">
-                  <InterventionPanel
-                    key={openWindowScene.key}
-                    window={openWindowScene.window}
-                    mode={mode}
-                    onChoose={c.choose}
-                    onSkip={c.skipWindow}
-                    onFreeText={c.intervene}
-                  />
-                </div>
-              )}
-            </AnimatePresence>
-          </div>
-          <AudioTimeline onToggle={c.togglePause} onSeek={c.seek} onJump={c.jumpLine} onVolume={c.setVolume} />
         </div>
 
-        <div className="flex flex-col gap-4 lg:h-[calc(100vh-150px)] lg:max-h-[860px]">
+        <div className="flex flex-col gap-4 lg:h-[calc(100vh-190px)] lg:max-h-[min(860px,calc((100vw-420px)*0.5625))]">
           <ObjectionButton
             mode={mode}
             armed={showWindow && openWindowScene?.window?.kind === "objection"}

@@ -4,7 +4,7 @@ import { MeshReflectorMaterial } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
-import { beamTexture, labelTexture, marbleTexture, sealTexture, woodTexture } from "./textures";
+import { labelTexture, marbleTexture, sealTexture, woodTexture } from "./textures";
 
 const GOLD = { color: "#d6ae62", metalness: 0.85, roughness: 0.28 } as const;
 
@@ -118,7 +118,6 @@ function WallClock({ position }: { position: V3 }) {
 }
 
 function Window({ x, z }: { x: number; z: number }) {
-  const beam = useMemo(() => beamTexture(), []);
   const dir = Math.sign(x);
   return (
     <group>
@@ -132,11 +131,6 @@ function Window({ x, z }: { x: number; z: number }) {
           <meshBasicMaterial color="#1a120d" />
         </mesh>
       ))}
-      {/* light shaft falling into the room */}
-      <mesh position={[x - dir * 2.6, 2.4, z]} rotation={[0, -dir * Math.PI / 2, dir * 0.62]}>
-        <planeGeometry args={[1.6, 7]} />
-        <meshBasicMaterial map={beam} transparent opacity={0.22} depthWrite={false} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} />
-      </mesh>
     </group>
   );
 }
@@ -170,11 +164,15 @@ function JuryBox({ mats }: { mats: ReturnType<typeof useMats> }) {
               </>
             ) : (
               <>
-                <mesh position={[0, 0.48, 0]} material={mats.juror} castShadow>
-                  <capsuleGeometry args={[0.17, 0.42, 4, 10]} />
+                {/* shoulders, neck, head: a proper silhouette, not a bowling pin */}
+                <mesh position={[0, 0.42, 0]} scale={[1, 1, 0.62]} material={mats.juror} castShadow>
+                  <sphereGeometry args={[0.24, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
                 </mesh>
-                <mesh position={[0, 0.98, 0]} material={mats.juror} castShadow>
-                  <sphereGeometry args={[0.14, 14, 14]} />
+                <mesh position={[0, 0.26, 0]} scale={[1, 1, 0.62]} material={mats.juror}>
+                  <cylinderGeometry args={[0.24, 0.26, 0.32, 16]} />
+                </mesh>
+                <mesh position={[0, 0.72, 0]} scale={[0.9 + (i % 3) * 0.06, 1.05 + (i % 4) * 0.04, 0.95]} material={mats.juror} castShadow>
+                  <sphereGeometry args={[0.13, 16, 14]} />
                 </mesh>
               </>
             )}
@@ -277,7 +275,7 @@ export function CourtroomSet({ reflections = true, gavel = 0 }: { reflections?: 
       <Box args={[2.3, 0.5, 1.8]} position={[4.2, 0.25, -3.7]} material={mats.darkWood} />
       <Paneled w={2.3} h={1.1} d={0.14} position={[4.2, 0.5, -2.85]} label="Witness" mats={mats} />
 
-      {/* the dock: a raised round platform, a gold rail behind, a pool of light */}
+      {/* the dock: a raised round platform with a gold edge */}
       <mesh position={[0, 0.15, 0.55]} castShadow receiveShadow>
         <cylinderGeometry args={[1.25, 1.35, 0.3, 48]} />
         <meshStandardMaterial color="#1a120d" roughness={0.5} />
@@ -286,16 +284,6 @@ export function CourtroomSet({ reflections = true, gavel = 0 }: { reflections?: 
         <cylinderGeometry args={[1.26, 1.26, 0.012, 48]} />
         <meshStandardMaterial {...GOLD} />
       </mesh>
-      <mesh position={[0, 1.15, 0.55]} rotation={[0, Math.PI, 0]}>
-        <torusGeometry args={[1.15, 0.03, 8, 40, Math.PI]} />
-        <meshStandardMaterial {...GOLD} />
-      </mesh>
-      {[-1.15, 1.15].map((x) => (
-        <mesh key={x} position={[x, 0.72, 0.55]}>
-          <cylinderGeometry args={[0.03, 0.03, 0.85, 8]} />
-          <meshStandardMaterial {...GOLD} />
-        </mesh>
-      ))}
 
       {/* counsel tables */}
       {[-3.7, 3.7].map((x) => (

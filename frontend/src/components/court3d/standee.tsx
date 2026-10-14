@@ -57,7 +57,7 @@ export function Standee({ character, position, height, rotationY = 0, speaking, 
     return m;
   }, [tex]);
 
-  useFrame(({ clock }, dt) => {
+  useFrame(({ clock, camera }, dt) => {
     const t = clock.elapsedTime + seed * 1.7;
     const a = speaking && amplitude ? Math.min(1, amplitude() * 5.5) : 0;
     smooth.current += (a - smooth.current) * (a > smooth.current ? 0.55 : 0.22);
@@ -66,7 +66,10 @@ export function Standee({ character, position, height, rotationY = 0, speaking, 
       const hop = reaction === "gasp" || reaction === "shocked" ? Math.max(0, Math.sin(t * 9)) * 0.06 : 0;
       group.current.position.y = position[1] + Math.sin(t * 1.3) * 0.012 + smooth.current * 0.05 + hop;
       group.current.rotation.z = Math.sin(t * 0.9) * 0.012 + (reaction === "nod" ? Math.sin(t * 8) * 0.03 : 0);
-      group.current.rotation.y = rotationY + Math.sin(t * 0.6) * 0.03;
+      // Paper-theatre cut-outs always turn to face the audience (the camera), so they never look razor-thin.
+      const face = Math.atan2(camera.position.x - position[0], camera.position.z - position[2]);
+      const goal = THREE.MathUtils.clamp(face, -0.9, 0.9) + rotationY * 0 + Math.sin(t * 0.6) * 0.02;
+      group.current.rotation.y = THREE.MathUtils.damp(group.current.rotation.y, goal, 4, dt);
     }
     if (mouth.current) {
       const ry = 1.5 + smooth.current * 7.5;
@@ -109,6 +112,13 @@ export function Standee({ character, position, height, rotationY = 0, speaking, 
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, 0.05]}>
           <planeGeometry args={[width * 0.9, 0.7]} />
           <meshBasicMaterial map={shadowTex} transparent depthWrite={false} opacity={0.7} />
+        </mesh>
+      )}
+      {tex && (
+        // die-cut cardboard edge: the same silhouette, a touch larger, in card stock
+        <mesh position={[0, height / 2, -0.012]} scale={[1.045, 1.035, 1]}>
+          <planeGeometry args={[width, height]} />
+          <meshStandardMaterial alphaMap={tex} alphaTest={0.5} color="#d9ccb1" roughness={1} side={THREE.DoubleSide} />
         </mesh>
       )}
       {tex && (
