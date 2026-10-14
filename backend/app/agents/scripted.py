@@ -157,6 +157,86 @@ LINES: dict[str, list[V]] = {
     ],
 }
 
+# Sharper variants. Each intent picks a fresh one per trial (see `pick(..., used)`).
+EXTRA: dict[str, list[V]] = {
+    "intro": [
+        ("This is The Court of Absolute Nonsense. [pause] Tonight, {d} stands accused of {crime}. The defendant has hired a lawyer. The lawyer has hired a lawyer.", "deadpan", "crisp late-night broadcast voice, dry and amused", 2, 0),
+    ],
+    "open_court": [
+        ("Order. We are gathered here because {d} stands accused of {crime}. [pause] I remind everyone this is a court of law. I remind *myself* every morning.", "deadpan", "slow, grave, quietly exhausted", 3, 0),
+    ],
+    "opening_statement:prosecutor": [
+        ("Your Honor, the People will show that {d} didn't just commit {crime}. It *planned* it. It *enjoyed* it. And somewhere, right now, it is doing it *again*.", "dramatic", "building from a whisper to a thunderclap", 5, 300),
+    ],
+    "opening_statement:defense": [
+        ("Your Honor, my client is innocent. And if my client isn't innocent, my client is *misunderstood*. And if my client isn't misunderstood, [pause] I'd like a short recess.", "smug", "silky, unhurried, one eyebrow permanently raised", 3, 200),
+    ],
+    "react_to_defendant": [
+        ("[pause] In thirty-one years, this court has heard a great many things. [pause] That was one of them.", "deadpan", "flat, unblinking, like a disappointed headmaster", 2, 900),
+    ],
+    "excuse": [
+        ("I was framed! [pause] By circumstances! And, a little bit, by me.", "desperate", "{defendant_voice}, panicking then confessing", 4, 0),
+    ],
+    "object_to_evidence": [
+        ("Objection! That exhibit was obtained without a warrant, without consent, and frankly, without *taste*.", "angry", "sharp, offended, slapping the table", 4, 0),
+    ],
+    "rule_on_objection": [
+        ("Overruled. [pause] But I've written it down in my feelings journal.", "deadpan", "dry, a flicker of sympathy", 2, 600),
+    ],
+    "testify": [
+        ("{w_knows} [pause] I have described it to my therapist. She also needed a therapist.", "nervous", "{witness_voice}", 3, 200),
+    ],
+    "leading_question": [
+        ("Isn't it true that {d} is a menace to society, a threat to the peace, and, frankly, *very rude*?", "dramatic", "pacing, jabbing the air with a pen", 4, 0),
+    ],
+    "overshare": [
+        ("Yes. And while I'm under oath: I have also been ignoring a very important email. Since March. That's not relevant. I just needed to say it.", "nervous", "{witness_voice}, a dam breaking", 3, 300),
+    ],
+    "cross_examine": [
+        ("Isn't it *convenient*, {W_voc}, that your memory is perfect, [pause] except for the part where you were involved?", "smug", "soft, circling, a cat with a mouse", 4, 200),
+    ],
+    "contradict_self": [
+        ("[long pause] ...I'd like to change my answer. [pause] {w_slip}", "desperate", "{witness_voice}, folding like a lawn chair", 5, 500),
+    ],
+    "overrule_and_scold": [
+        ("Overruled. Counsel, the truth is not a personal attack. It just feels like one.", "stern", "weary, almost kind", 3, 500),
+    ],
+    "surprise_testimony": [
+        ("I've been sitting in the back this whole time. Nobody asked me anything. [pause] {s_knows} [pause] {s_slip}", "dramatic", "{surprise_voice}", 4, 300),
+    ],
+    "closing_argument:prosecutor": [
+        ("Members of the jury. Think of everyone who suffered. Think of {gag0}. [pause] Then look at {d}, and tell me it doesn't look *guilty*.", "dramatic", "low, then rising to a roar", 5, 300),
+    ],
+    "closing_argument:defense": [
+        ("The prosecution has a story. I have the truth: {twist_short} [pause] You can't convict my client for being the most convenient thing to blame.", "smug", "quiet, warm, then the knockout", 4, 300),
+    ],
+    "last_words": [
+        ("[long pause] I would just like to say: I've changed. [pause] I haven't. But I'd like to say it.", "sad", "{defendant_voice}, small and sincere", 3, 1200),
+    ],
+    "recap": [
+        ("Here's where we are: {d} is accused of {crime}, the prosecution has used the word 'tragedy' four times, and {w} will never be invited anywhere again. The jury is out. So, emotionally, are we.", "deadpan", "dry broadcast voice, crisp and amused", 2, 300),
+    ],
+    "deliberate": [
+        ("[long pause] The court has considered the evidence. [pause] The court has considered the testimony. [pause] The court has considered lunch. Let's proceed.", "deadpan", "slow, ceremonial, faintly hungry", 3, 800),
+    ],
+    "sentence": [
+        ("{D} is hereby {sentence_lower} [pause] This court is adjourned, and I am going home to lie down.", "deadpan", "formal, then abruptly done", 3, 400),
+    ],
+    "react_guilty": [
+        ("[gasp] Guilty?! [pause] I'd like to appeal. [pause] To your *emotions*.", "desperate", "{defendant_voice}, crumbling", 5, 300),
+    ],
+    "react_acquitted": [
+        ("[laugh] Not guilty! I'd like to thank the jury, my lawyer, and nobody else. [pause] Especially not the prosecution.", "triumphant", "{defendant_voice}, giddy", 5, 300),
+    ],
+    "outro": [
+        ("That's the ruling. Justice was served, lightly toasted. [pause] This has been The Court of Absolute Nonsense. Drive safely. Object often.", "deadpan", "warm sign-off, crisp and wry", 2, 400),
+    ],
+}
+
+for _k, _v in EXTRA.items():
+    LINES.setdefault(_k, []).extend(_v)
+
+
 # Responses to pre-generated intervention options
 RESPONSES: dict[str, list[V]] = {
     "sustained": [

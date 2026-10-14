@@ -236,6 +236,78 @@ _PACKS: list[tuple[tuple[str, ...], dict]] = [
         ),
     ),
     (
+        ("group project", "group work", "teammate"),
+        dict(
+            kind="concept", glyph="GRP",
+            personality="Cheerfully parasitic, always 'just about to start', fluent in the word 'synergy'.",
+            voice="breezy, vague, relentlessly positive",
+            alibi="I contributed. Emotionally. I was the vibes.",
+            excuse="Teamwork makes the dream work. Mostly your work. But it's a team.",
+            witnesses=[
+                WitnessIdea("The Shared Google Doc", "Saw every edit. Remembers every name.", "Precise, petty, has version history.", "One person wrote thirty-one pages. Three people changed the font.", "...I also have a comment that just says 'looks good!' from someone who never opened me.", "DOC", "teal"),
+                WitnessIdea("The Group Chat", "Witnessed the coordination. Or lack of it.", "Passive-aggressive, speaks in reactions.", "I have forty messages that say 'who's doing the slides?'", "...The answer, every time, was a thumbs-up emoji. From nobody.", "💬", "violet"),
+            ],
+            surprise=WitnessIdea("The Deadline", "Arrived exactly when scheduled. Nobody was ready.", "Punctual, ominous, unbothered.", "I gave everyone three weeks. I watched them use none of them.", "And the person who did all the work? [pause] Also started the night before.", "11:59", "burgundy"),
+            evidence=[
+                ("Contribution chart", "One bar that reaches the ceiling. Three bars that are technically pixels.", "chart", "prosecution"),
+                ("The final slide", "It just says 'Questions?' in Comic Sans.", "document", "prosecution"),
+                ("Edit history, 3 AM", "The plaintiff deleting everyone else's sections 'for consistency'.", "log", "defense"),
+            ],
+            twist="The plaintiff deleted everyone else's work at 3 AM and rewrote it alone, then complained that nobody helped.",
+            gags=["synergy", "who's doing the slides", "looks good"],
+            sentence="Sentenced to present the next group project alone, live, with no slides and no warning.",
+            acquittal="The court finds the plaintiff a control freak with excellent intentions.",
+        ),
+    ),
+    (
+        ("semicolon", ";"),
+        dict(
+            kind="concept", glyph=";",
+            personality="Tiny, petty, absolutely sure it's essential, vanishes when you need it most.",
+            voice="clipped, precise, faintly superior",
+            alibi="I was right there. At the end of line forty-two. Where I always am.",
+            excuse="I'm the only thing holding your code together. You're welcome.",
+            witnesses=[
+                WitnessIdea("The Compiler", "Reported the crime. Four hundred times.", "Exhausted, literal, has no chill.", "Expected semicolon on line forty-two. I said it in red. Every time.", "...I'll admit, the error was actually on line forty-one. I just like line forty-two.", "GCC", "slate"),
+                WitnessIdea("Python", "A neighbour who doesn't use semicolons at all.", "Smug, relaxed, wears socks with sandals.", "I've never needed one. Indentation is enough for me.", "...I do occasionally break because of a single space. But we don't talk about that.", "PY", "moss"),
+            ],
+            surprise=WitnessIdea("The Comma", "The defendant's estranged cousin.", "Dramatic, clingy, everywhere.", "Everyone blames the semicolon. Nobody notices me, quietly ruining lists.", "And the missing semicolon? [pause] It was me. I was in its spot. Pretending.", ",", "violet"),
+            evidence=[
+                ("Build log", "Four hundred errors caused by one missing character.", "log", "prosecution"),
+                ("A developer's search history", "'why is semicolon', 'is semicolon optional', 'semicolon therapy'.", "document", "prosecution"),
+                ("Line forty-one", "A comma, wearing a tiny semicolon disguise.", "photo", "defense"),
+            ],
+            twist="The 'missing semicolon' was a comma in disguise the whole time.",
+            gags=["line forty-two", "you're welcome", "four hundred errors"],
+            sentence="Sentenced to appear at the end of every sentence the plaintiff writes, including texts to their mother.",
+            acquittal="The court finds the comma to be a person of significant interest.",
+        ),
+    ),
+    (
+        ("laptop fan", "fan", "laptop", "overheat"),
+        dict(
+            kind="tech", glyph="FAN",
+            personality="Overdramatic, convinced every task is a rocket launch, sounds like it's about to leave Earth.",
+            voice="breathless, whirring, perpetually at full throttle",
+            alibi="Someone opened a spreadsheet. I had to prepare for *anything*.",
+            excuse="I'm not loud, I'm *passionate*.",
+            witnesses=[
+                WitnessIdea("Forty-Seven Browser Tabs", "Open since February. Never closed.", "A chaotic crowd that speaks in unison.", "We were just resting. All forty-seven of us. Gently.", "...Tab thirty-one has been playing a muted video since spring. We all knew.", "47", "violet"),
+                WitnessIdea("The Coworker on the Call", "Heard the noise during every meeting.", "Polite, traumatised, too nice to say anything.", "Every time you unmuted, it sounded like a jet was landing in your kitchen.", "...I said 'no worries!' Eleven times. There were worries.", "🎧", "teal"),
+            ],
+            surprise=WitnessIdea("The Dust", "Has lived inside the laptop since 2021.", "Cosy, unbothered, deeply settled.", "It's warm in here. I've made a home. I have a family now.", "If anyone had cleaned me out, even once, that fan would be a whisper.", "DUST", "ember"),
+            evidence=[
+                ("Decibel reading", "Ninety-four decibels while the plaintiff opened Notepad.", "chart", "prosecution"),
+                ("Meeting recording", "Forty minutes of a jet engine and someone saying 'sorry, can you repeat that?'", "recording", "prosecution"),
+                ("Inside the vents", "A photograph of the dust colony, which has elected a mayor.", "photo", "defense"),
+            ],
+            twist="The laptop has never once been cleaned, and the dust inside has formed its own government.",
+            gags=["preparing for launch", "forty-seven tabs", "no worries"],
+            sentence="Sentenced to whisper for six months, and to never again take off during a meeting.",
+            acquittal="The court finds the dust colony responsible and orders a can of compressed air.",
+        ),
+    ),
+    (
         ("printer",),
         dict(
             kind="object", glyph="PC LOAD",
