@@ -232,6 +232,7 @@ class SceneBrief(BaseModel):
 
 
 _INTENT_TEXT = {
+    "intro": "Welcome the audience to the show and introduce tonight's case in two dry sentences.",
     "open_court": "Open the court, read the charge gravely, express weary disdain for the case.",
     "opening_statement": "Deliver an opening statement that frames the case for your side.",
     "introduce_self": "First words in court: reveal your personality and your signature excuse.",

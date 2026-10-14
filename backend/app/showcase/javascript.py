@@ -155,6 +155,8 @@ def _vote(scene: str, final: bool) -> InterventionWindow:
 
 SCENES: list[Scene] = [
     Scene(id="s01", phase=Phase.OPENING_STATEMENTS, title="All Rise", window=_vote("s01", False), turns=[
+        L("s01-t00", "reporter", "Good evening, and welcome to The Court of Absolute Nonsense. [pause] Tonight, a case eleven years in the making. Or one plus one years. Depending on who you ask.",
+          "deadpan", "crisp late-night broadcast voice, dry and amused", 2, 0, kind="recap"),
         L("s01-t01", "judge", "[clears throat] Order. Case number CR-2026-0001: The People versus JavaScript. The charge: causing emotional damage to developers through undefined behavior, mysterious coercion, and unexpected production bugs. [pause] I have been a judge for thirty-one years. I have never wanted to retire more.",
           "deadpan", "grave, slow, bone-dry, every word weighed", 3, 0, sfx=["gavel"], technique="deadpan"),
         L("s01-t02", "prosecutor", "Your Honor, I have been a senior developer for fifteen years. [pause] Fifteen. Years. I have seen a *string* add itself to a number and return a feeling. The People will prove the defendant didn't just break our code. It broke our *spirit*.",

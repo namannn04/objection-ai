@@ -1,0 +1,155 @@
+@import "tailwindcss";
+
+/* ── Objection AI design tokens: neo-noir courtroom meets theatrical satire ── */
+@theme {
+  --color-ink: #090909;
+  --color-ink-2: #141414;
+  --color-ink-3: #202020;
+  --color-ink-4: #2b2b2b;
+  --color-ivory: #f5f0e6;
+  --color-ivory-dim: #c9c3b6;
+  --color-gold: #d6ae62;
+  --color-gold-dim: #8f7444;
+  --color-burgundy: #6b202a;
+  --color-burgundy-bright: #9b2f3d;
+  --color-mute: #999999;
+  --color-line: rgb(245 240 230 / 0.09);
+  --color-line-strong: rgb(245 240 230 / 0.16);
+
+  --font-display: var(--font-instrument-serif), "Times New Roman", serif;
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --ease-court: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-gavel: cubic-bezier(0.7, 0, 0.84, 0);
+
+  --animate-marquee: marquee 60s linear infinite;
+  --animate-pulse-gold: pulse-gold 1.6s var(--ease-court) infinite;
+  --animate-blink: blink 1.2s steps(2, start) infinite;
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes pulse-gold {
+    0%, 100% { box-shadow: 0 0 0 0 rgb(214 174 98 / 0.45); }
+    50% { box-shadow: 0 0 0 14px rgb(214 174 98 / 0); }
+  }
+  @keyframes blink {
+    to { visibility: hidden; }
+  }
+}
+
+:root {
+  color-scheme: dark;
+  --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+html,
+body {
+  background: var(--color-ink);
+  color: var(--color-ivory);
+}
+
+body {
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Film grain over everything, never intercepting input */
+body::after {
+  content: "";
+  position: fixed;
+  inset: -50%;
+  background-image: var(--grain);
+  opacity: 0.045;
+  pointer-events: none;
+  z-index: 100;
+}
+
+::selection {
+  background: var(--color-gold);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+@utility font-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  word-spacing: 0.06em;
+}
+
+@utility eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-mute);
+}
+
+@utility hairline {
+  border-color: var(--color-line);
+}
+
+@utility text-balance {
+  text-wrap: balance;
+}
+
+/* Scrollbars that belong in a courtroom */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-ink-4) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Character life: breathing, blinking, blinking LEDs ── */
+.breathe {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: breathe 4.2s ease-in-out infinite;
+}
+.lid {
+  transform-box: fill-box;
+  transform-origin: 50% 0%;
+  transform: scaleY(0);
+  animation: blink-lid 5.3s infinite;
+  animation-delay: var(--blink-delay, 0s);
+}
+.led { animation: led 1.3s steps(2, jump-none) infinite; }
+.steam { animation: steam 3s ease-in-out infinite; }
+.speaking .breathe { animation-duration: 2.2s; }
+.brow { transition: all 220ms var(--ease-court); }
+
+@keyframes breathe {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(-1px) scaleY(1.008); }
+}
+@keyframes blink-lid {
+  0%, 94%, 100% { transform: scaleY(0); }
+  96.5% { transform: scaleY(1); }
+}
+@keyframes led {
+  50% { opacity: 0.25; }
+}
+@keyframes steam {
+  0%, 100% { opacity: 0.2; transform: translateY(2px); }
+  50% { opacity: 0.7; transform: translateY(-3px); }
+}

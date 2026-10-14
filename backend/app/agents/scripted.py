@@ -13,6 +13,10 @@ V = tuple[str, str, str, int, int]
 
 LINES: dict[str, list[V]] = {
     # ── opening ──────────────────────────────────────────────────────────
+    "intro": [
+        ("Good evening, and welcome to The Court of Absolute Nonsense, where nothing is too small to sue. [pause] Tonight: The People versus {D}. Please silence your phones. They may be called as witnesses.", "deadpan", "crisp late-night broadcast voice, dry and amused", 2, 0),
+        ("You're listening to The Court of Absolute Nonsense. [pause] Tonight's defendant: {d}. Tonight's charge: {crime}. Tonight's judge: deeply tired. Let's go to the courtroom.", "deadpan", "crisp late-night broadcast voice, dry and amused", 2, 0),
+    ],
     "open_court": [
         ("[clears throat] Order. This court is now in session. Case number {case_number}: The People versus {D}. The charge: {crime}. [pause] I have read the file. Twice. I would like those hours back.", "stern", "slow, grave, utterly unamused", 3, 0),
         ("Be seated. We are here today because {D} stands accused of {crime}. [pause] I have presided over this court for thirty-one years, and I have never been more prepared to be disappointed.", "deadpan", "measured, bone-dry, every word a sigh", 3, 0),

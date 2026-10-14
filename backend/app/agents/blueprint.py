@@ -38,6 +38,7 @@ P = Phase
 OPENING = SceneSpec(
     "s01", P.OPENING_STATEMENTS, "All Rise",
     (
+        S("reporter", "intro", "recap"),
         S("judge", "open_court", "line", "deadpan"),
         S("prosecutor", "opening_statement", "line", "escalation"),
         S("defense", "opening_statement", "line", "personality_clash"),
