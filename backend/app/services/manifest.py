@@ -84,8 +84,8 @@ def scene_payload(scene: SceneRow, session_id: str | None = None) -> dict:
     }
 
 
-def build_manifest(case: Case, sfx_base: str = "/media/sfx") -> dict:
-    scenes = [scene_payload(s) for s in case.scenes]
+def build_manifest(case: Case, sfx_base: str = "/media/sfx", session_id: str | None = None) -> dict:
+    scenes = [scene_payload(s, session_id) for s in case.scenes]
     all_segments = [seg for s in scenes for seg in s["segments"]] + [
         r for s in scenes if s["window"] for o in s["window"]["options"] for r in o["response"]
     ]

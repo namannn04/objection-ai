@@ -139,3 +139,34 @@ async def test_replay_preserves_history(client, drain):
     await _play_to_verdict(client, new, "defense")
     assert (await client.get(f"/api/sessions/{sid}/verdict")).json()["guilty"] is True
     assert (await client.get(f"/api/sessions/{new}/verdict")).json()["guilty"] is False
+
+
+async def test_chaos_free_text_intervention(client, drain):
+    case_id = await _ready_case(client, drain)
+    sid = (await _post(client, f"/api/cases/{case_id}/sessions", {"mode": "chaos"})).json()["state"]["session_id"]
+    await _post(client, f"/api/sessions/{sid}/start")
+    await _post(client, f"/api/sessions/{sid}/scenes/s01/complete")
+    bad = await _post(client, f"/api/sessions/{sid}/windows/s01/intervene", {"text": "kill yourself"})
+    assert bad.status_code == 422
+    r = await _post(client, f"/api/sessions/{sid}/windows/s01/intervene", {"text": "Objection! The alarm clock has no ears!"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    await drain()
+    job = (await client.get(f"/api/jobs/{body['job_id']}")).json()
+    assert job["status"] == "done", job
+    m = (await client.get(f"/api/cases/{case_id}/manifest?session_id={sid}")).json()
+    branch = m["scenes"][0]["live_branches"][f"live-{body['intervention_id']}"]
+    assert [s["speaker"] for s in branch][0] == "judge" and all(s["audio"] for s in branch)
+    # other sessions never see this branch
+    assert not (await client.get(f"/api/cases/{case_id}/manifest")).json()["scenes"][0]["live_branches"]
+    st = (await _post(client, f"/api/sessions/{sid}/windows/resolve")).json()
+    assert st["phase"] == "EVIDENCE_PRESENTATION"
+
+
+async def test_free_text_rejected_outside_chaos(client, drain):
+    case_id = await _ready_case(client, drain)
+    sid = (await _post(client, f"/api/cases/{case_id}/sessions", {"mode": "jury"})).json()["state"]["session_id"]
+    await _post(client, f"/api/sessions/{sid}/start")
+    await _post(client, f"/api/sessions/{sid}/scenes/s01/complete")
+    r = await _post(client, f"/api/sessions/{sid}/windows/s01/intervene", {"text": "Objection!"})
+    assert r.status_code == 403

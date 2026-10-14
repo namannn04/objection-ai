@@ -20,6 +20,17 @@ async def health(s: AsyncSession = Depends(get_session)):
     return {"ok": True}
 
 
+@router.get("/jobs/{job_id}", summary="Background job status")
+async def job_status(job_id: str, s: AsyncSession = Depends(get_session)):
+    from app.models import AudioGenerationJob
+
+    job = await s.get(AudioGenerationJob, job_id)
+    if not job:
+        raise HTTPException(404, "job not found")
+    return {"id": job.id, "kind": job.kind, "status": job.status, "progress": job.progress, "result": job.result,
+            "error": job.error, "created_at": job.created_at, "finished_at": job.finished_at}
+
+
 @router.get("/settings", summary="Provider configuration and defaults")
 async def settings(s: AsyncSession = Depends(get_session)):
     cfg = get_settings()

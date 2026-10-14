@@ -38,8 +38,12 @@ async def seed_showcase() -> str:
     async with session_factory()() as s:
         case = (await s.execute(select(Case).where(Case.slug == javascript.CASE_FIELDS["slug"]))).scalar_one_or_none()
         if case and case.status == Phase.COURTROOM_READY.value:
-            log.info("showcase already present: %s", case.slug)
-            return case.id
+            cv = await cs.current_version(s, case)
+            if cv and cv.script == javascript.SCRIPT.model_dump(mode="json"):
+                log.info("showcase already present: %s", case.slug)
+                return case.id
+            log.info("showcase script changed; re-syncing %s", case.slug)
+            cs.advance(case, Phase.AUDIO_PREPARATION)
         report = validate_script(javascript.PLAN, javascript.SCRIPT)
         if not report.valid:
             raise SystemExit(f"showcase script invalid: {report.errors}")

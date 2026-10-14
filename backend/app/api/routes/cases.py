@@ -111,11 +111,11 @@ async def validate(ref: str, s: AsyncSession = Depends(get_session)):
 
 
 @router.get("/{ref}/manifest", summary="Playback manifest")
-async def manifest(ref: str, s: AsyncSession = Depends(get_session)):
+async def manifest(ref: str, session_id: str | None = None, s: AsyncSession = Depends(get_session)):
     case = await get_case_or_404(s, ref)
     if not case.scenes:
         raise HTTPException(409, "case has no script yet")
-    return build_manifest(case)
+    return build_manifest(case, session_id=session_id)
 
 
 @router.get("/{ref}/audio/estimate", summary="Projected audio generation cost")
