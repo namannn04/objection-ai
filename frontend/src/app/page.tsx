@@ -7,7 +7,7 @@ export default function Home() {
   return (
     <>
       <CourtIntro />
-      <SiteHeader />
+      <SiteHeader className="absolute inset-x-0 top-0" />
       <main className="flex flex-col">
         <Hero />
         <Marquee />

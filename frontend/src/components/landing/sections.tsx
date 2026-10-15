@@ -27,8 +27,9 @@ export function Marquee() {
   return (
     <section className="relative border-y hairline py-14">
       <div className="mx-auto max-w-[1400px] px-4 sm:px-8">
-        <h2 className="font-display text-[clamp(2.4rem,5.6vw,5.2rem)] leading-[0.9] text-balance">
-          Everything is guilty <span className="italic text-gold">until proven ridiculous.</span>
+        <h2 className="text-balance">
+          <span className="block font-poster text-[clamp(3rem,8vw,7.5rem)] leading-[0.86]">Everything is guilty</span>
+          <span className="mt-2 block font-display text-[clamp(1.8rem,4.2vw,4rem)] italic leading-none text-gold">until proven ridiculous.</span>
         </h2>
       </div>
       <div className="relative mt-10 overflow-hidden [mask-image:linear-gradient(90deg,transparent,black_8%,black_92%,transparent)]">
@@ -65,7 +66,7 @@ export function HowItWorks() {
             transition={{ delay: i * 0.08, duration: 0.6 }}
             className="bg-ink p-8 sm:p-10"
           >
-            <div className="font-display text-6xl italic text-gold/80">{s.n}</div>
+            <div className="font-poster text-7xl text-gold/80">{s.n}</div>
             <h3 className="mt-8 text-xl font-medium">{s.title}</h3>
             <p className="mt-3 leading-relaxed text-mute">{s.body}</p>
           </motion.div>
@@ -129,7 +130,7 @@ export function Docket() {
       <div className="flex items-end justify-between gap-6">
         <div>
           <div className="eyebrow">On the docket</div>
-          <h2 className="mt-4 font-display text-5xl leading-none sm:text-6xl">Case of the day</h2>
+          <h2 className="mt-4 font-poster text-6xl leading-[0.9] sm:text-7xl">Case of the day</h2>
         </div>
         <Link href="/docket" className="font-mono text-[11px] uppercase tracking-[0.18em] text-mute hover:text-ivory">All cases →</Link>
       </div>
@@ -170,8 +171,9 @@ export function Ensemble() {
         <div className="grid gap-10 lg:grid-cols-[1fr_2fr]">
           <div>
             <div className="eyebrow">The ensemble</div>
-            <h2 className="mt-4 font-display text-5xl leading-[0.95] sm:text-6xl">
-              A permanent cast. <span className="italic text-gold">Permanently exhausted.</span>
+            <h2 className="mt-4">
+              <span className="block font-poster text-6xl leading-[0.9] sm:text-7xl">A permanent cast.</span>
+              <span className="mt-2 block font-display text-4xl italic leading-tight text-gold sm:text-5xl">Permanently exhausted.</span>
             </h2>
             <p className="mt-6 max-w-sm leading-relaxed text-mute">
               Four regulars with stable voices and long memories. Every case brings a new defendant and new witnesses —

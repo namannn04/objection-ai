@@ -16,7 +16,8 @@
   --color-line: rgb(245 240 230 / 0.09);
   --color-line-strong: rgb(245 240 230 / 0.16);
 
-  --font-display: var(--font-instrument-serif), "Times New Roman", serif;
+  --font-display: var(--font-serif-display), Georgia, serif;
+  --font-poster: var(--font-anton), Impact, "Arial Narrow", sans-serif;
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
@@ -83,8 +84,16 @@ body::after {
 @utility font-display {
   font-family: var(--font-display);
   font-weight: 400;
-  letter-spacing: -0.01em;
-  word-spacing: 0.06em;
+  letter-spacing: -0.015em;
+  font-variation-settings: "SOFT" 50, "WONK" 0, "opsz" 72;
+}
+
+/* Poster headlines: condensed, loud, uppercase. */
+@utility font-poster {
+  font-family: var(--font-poster);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: -0.005em;
 }
 
 @utility eyebrow {

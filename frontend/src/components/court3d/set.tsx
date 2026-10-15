@@ -316,7 +316,7 @@ export function CourtroomSet({ reflections = true, gavel = 0 }: { reflections?: 
   const planks = useMemo(() => plankTexture(), []);
   const carpet = useMemo(() => carpetTexture(), []);
   const seal = useMemo(() => sealTexture(), []);
-  const motto = useMemo(() => labelTexture("In Nonsense We Trust", { w: 1400, h: 120, font: "italic 400 76px 'Instrument Serif', Georgia, serif", bg: "rgba(0,0,0,0)", border: "rgba(0,0,0,0)" }), []);
+  const motto = useMemo(() => labelTexture("In Nonsense We Trust", { w: 1400, h: 120, font: "italic 600 70px Georgia, serif", bg: "rgba(0,0,0,0)", border: "rgba(0,0,0,0)" }), []);
   const balusters = useMemo(() => Array.from({ length: 26 }, (_, i) => -7.5 + i * 0.6).filter((x) => Math.abs(x) > 0.7), []);
 
   return (

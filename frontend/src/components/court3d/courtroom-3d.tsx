@@ -63,9 +63,11 @@ export interface Courtroom3DProps {
   live?: boolean;
   /** Decorative mode for the landing page: slow orbit, lighter effects. */
   showcase?: boolean;
+  /** Hide the reporter PIP and case number (full-bleed backgrounds). */
+  minimal?: boolean;
 }
 
-function Director({ speakerSeat, burst, verdict, showcase }: { speakerSeat: Seat | null; burst: number; verdict: boolean; showcase: boolean }) {
+function Director({ speakerSeat, burst, verdict, showcase, hero }: { speakerSeat: Seat | null; burst: number; verdict: boolean; showcase: boolean; hero: boolean }) {
   const look = useRef(new THREE.Vector3(...SHOTS.wide.look));
   const lastBurst = useRef(burst);
   const shake = useRef(0);
@@ -79,18 +81,27 @@ function Director({ speakerSeat, burst, verdict, showcase }: { speakerSeat: Seat
     const t = clock.elapsedTime;
     let shot = verdict ? SHOTS.verdict : speakerSeat ? SHOTS[speakerSeat] : SHOTS.wide;
     if (whip.current > 0.35) shot = SHOTS.objection;
-    if (showcase) {
+    if (hero) {
+      // Poster framing: the room sits in the right two-thirds, the left stays clear for type.
+      // A slow dolly drifts toward whoever is talking, never cutting.
+      const lean = speakerSeat ? SEATS[speakerSeat].pos[0] * 0.12 : 0;
+      shot = {
+        pos: [-3.6 + Math.sin(t * 0.13) * 0.5 + lean, 3.25 + Math.sin(t * 0.21) * 0.15, 9.6],
+        look: [-2.5 + lean, 1.95, -2.6],
+        fov: 46,
+      };
+    } else if (showcase) {
       const a = Math.sin(t * 0.12) * 0.55;
       shot = { pos: [Math.sin(a) * 12.4, 3.6 + Math.sin(t * 0.2) * 0.3, Math.cos(a) * 12.4], look: [0, 1.9, -2.6], fov: 40 };
     }
-    const speed = whip.current > 0.35 ? 0.12 : verdict ? 1.6 : 0.85;
+    const speed = hero ? 2.4 : whip.current > 0.35 ? 0.12 : verdict ? 1.6 : 0.85;
     easing.damp3(camera.position, shot.pos, speed, dt);
     easing.damp3(look.current, shot.look, speed * 0.9, dt);
     const cam = camera as THREE.PerspectiveCamera;
     cam.fov = THREE.MathUtils.damp(cam.fov, shot.fov, 3, dt);
     cam.updateProjectionMatrix();
     // handheld drift + objection shake
-    const drift = showcase ? 0 : 0.02;
+    const drift = showcase || hero ? 0 : 0.02;
     const s = shake.current * 0.09;
     camera.lookAt(
       look.current.x + Math.sin(t * 0.7) * drift + (Math.random() - 0.5) * s,
@@ -148,7 +159,7 @@ function Lighting({ speakerSeat }: { speakerSeat: Seat | null }) {
   );
 }
 
-function Scene({ characters, speaker, emotion, reactions = {}, amplitude = null, witnessKey, burst = 0, gavel = 0, celebrate = false, verdict = false, showcase = false, reflections }: Courtroom3DProps & { reflections: boolean }) {
+function Scene({ characters, speaker, emotion, reactions = {}, amplitude = null, witnessKey, burst = 0, gavel = 0, celebrate = false, verdict = false, showcase = false, minimal = false, reflections }: Courtroom3DProps & { reflections: boolean }) {
   const witness = witnessKey ?? characters.find((c) => c.role === "witness" && !c.surprise)?.key ?? null;
   const placed = characters
     .map((c) => ({ c, seat: seatOf(c, witness) }))
@@ -159,7 +170,7 @@ function Scene({ characters, speaker, emotion, reactions = {}, amplitude = null,
       <color attach="background" args={["#070606"]} />
       <fog attach="fog" args={["#070606", 14, 32]} />
       <Lighting speakerSeat={active} />
-      <Director speakerSeat={active} burst={burst} verdict={verdict} showcase={showcase} />
+      <Director speakerSeat={active} burst={burst} verdict={verdict} showcase={showcase} hero={minimal} />
       <CourtroomSet reflections={reflections} gavel={gavel} />
       <PaperRain active={celebrate} />
       {placed.map(({ c, seat }, i) => {
@@ -200,7 +211,7 @@ function Scene({ characters, speaker, emotion, reactions = {}, amplitude = null,
 }
 
 export default function Courtroom3D(props: Courtroom3DProps) {
-  const { characters, speaker, amplitude = null, caseNumber, className, children, live = true, showcase = false } = props;
+  const { characters, speaker, amplitude = null, caseNumber, className, children, live = true, showcase = false, minimal = false } = props;
   const [reflections, setReflections] = useState(true);
   const reporter = characters.find((c) => c.role === "reporter");
   return (
@@ -218,7 +229,7 @@ export default function Courtroom3D(props: Courtroom3DProps) {
           <Scene {...props} reflections={reflections} />
         </Suspense>
       </Canvas>
-      {reporter && !showcase && (
+      {reporter && !showcase && !minimal && (
         <div className="pointer-events-none absolute left-[2.5%] top-[4%] z-[7] w-[8.5%] min-w-[54px]">
           <div className={cn("aspect-square overflow-hidden rounded-full border bg-ink-3 transition-colors duration-500", speaker === reporter.key ? "border-gold" : "border-line-strong")}>
             <div className="h-[118%] w-full translate-y-[2%]">
@@ -230,7 +241,7 @@ export default function Courtroom3D(props: Courtroom3DProps) {
           </div>
         </div>
       )}
-      {caseNumber && (
+      {caseNumber && !minimal && (
         <div className="pointer-events-none absolute right-[2.5%] top-[4%] z-[9] font-mono text-[9px] tracking-[0.2em] text-mute sm:text-[10px]">{caseNumber}</div>
       )}
       <div className="absolute inset-0 z-[10]">{children}</div>
