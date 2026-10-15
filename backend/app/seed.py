@@ -126,7 +126,46 @@ async def revoice() -> None:
                      {k: out[k] for k in ("synthesized", "cached", "blocked", "failed")})
 
 
-async def main(showcase_only: bool) -> None:
+async def recast_all() -> None:
+    """Re-cast every case with the current voice casting (voices + pace), then re-record with real voices."""
+    from app.audio.voices import cast
+    from app.domain.models import CasePlan
+    from app.models import Character
+
+    voice = await best_free_voice()
+    async with session_factory()() as s:
+        ids = [c.id for c in (await s.execute(select(Case).where(Case.status == Phase.COURTROOM_READY.value))).scalars()]
+    for case_id in ids:
+        async with session_factory()() as s:
+            case = await cs.load_case(s, case_id)
+            cv = await cs.current_version(s, case) if case else None
+            if not case or not cv:
+                continue
+            plan = CasePlan.model_validate(cv.plan)
+            choices = cast(plan.characters)
+            specs = {c.key: c for c in plan.characters}
+            for ch in case.characters:
+                ch_row: Character = ch
+                v, spec = choices.get(ch_row.key), specs.get(ch_row.key)
+                if not v or not ch_row.voice or not spec:
+                    continue
+                ch_row.voice.voice_id = v.fish_voice_id
+                ch_row.voice.voice_label = v.label
+                ch_row.voice.base_direction = v.base_direction
+                ch_row.voice.mock_params = {**(ch_row.voice.mock_params or {}), "pace": spec.voice.pace}
+            cs.advance(case, Phase.AUDIO_PREPARATION)
+            case.audio_provider = voice
+            await s.commit()
+            case = await cs.load_case(s, case_id)
+            out = await _synthesize(s, case, _noop, voice)
+            log.info("re-cast %s: %s", case.slug, {k: out[k] for k in ("synthesized", "cached", "blocked", "failed")})
+
+
+async def main(showcase_only: bool, recast: bool = False) -> None:
+    if recast:
+        await seed_showcase()
+        await recast_all()
+        return
     await seed_showcase()
     if not showcase_only:
         await seed_curated()
@@ -137,4 +176,6 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     p = argparse.ArgumentParser()
     p.add_argument("--showcase", action="store_true")
-    asyncio.run(main(p.parse_args().showcase))
+    p.add_argument("--recast", action="store_true", help="re-cast voices for every case and re-record")
+    a = p.parse_args()
+    asyncio.run(main(a.showcase, a.recast))

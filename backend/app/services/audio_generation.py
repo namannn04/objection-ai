@@ -28,6 +28,9 @@ from app.models import AudioAsset, Case, DialogueTurnRow, VoiceAssignment
 
 Progress = Callable[[str, dict], Awaitable[None]]
 
+_ENSEMBLE_PACE = {"judge": "slow", "prosecutor": "fast", "defense": "measured", "reporter": "measured"}
+_MOCK_FIELDS = {"f0", "speed", "brightness", "breath", "wobble", "shape"}
+
 SFX_NAMES = ("gavel", "objection", "crowd_gasp", "crowd_laugh", "crowd_murmur", "dramatic_sting")
 FIXTURE_DIR = Path(__file__).resolve().parents[1] / "audio" / "fixtures" / "sfx"
 
@@ -110,8 +113,9 @@ class AudioGenerationService:
 
     def compile(self, row: DialogueTurnRow, voice: VoiceAssignment) -> CompiledRequest:
         turn = DialogueTurn.model_validate(row.data)
+        pace = (voice.mock_params or {}).get("pace") or _ENSEMBLE_PACE.get(row.speaker, "measured")
         return compile_line(self.provider.name, self.provider.model, turn, voice.voice_id, voice.base_direction,
-                            mock_seed=voice.voice_id + voice.base_direction)
+                            mock_seed=voice.voice_id + voice.base_direction, pace=pace)
 
     async def estimate(self, session: AsyncSession, case: Case, rows: list[DialogueTurnRow]) -> PrepReport:
         voices = await self._voices(session, case)
@@ -298,7 +302,7 @@ class AudioGenerationService:
 
     async def _render(self, req: CompiledRequest, voice: VoiceAssignment) -> tuple[Path, int, list[dict], str]:
         billable = self.provider.billable
-        mv = MockVoice(**voice.mock_params) if voice.mock_params else None
+        mv = MockVoice(**{k: v for k, v in voice.mock_params.items() if k in _MOCK_FIELDS}) if voice.mock_params else None
         attempts = 0
         while True:
             attempts += 1

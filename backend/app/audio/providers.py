@@ -93,6 +93,7 @@ class FishAudioProvider:
             "normalize": s.get("normalize", True),
             "temperature": s.get("temperature", 0.7),
             "top_p": s.get("top_p", 0.7),
+            **({"prosody": {"speed": s["prosody"]["speed"], "normalize_loudness": True}} if s.get("prosody") else {}),
         }
 
     async def synthesize(self, req: CompiledRequest, voice: MockVoice | None = None) -> SynthesisResult:

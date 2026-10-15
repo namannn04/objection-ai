@@ -68,7 +68,8 @@ HumorTechnique = Literal[
 # Inline performance cues authors may embed in dialogue text: "[sigh] Fine."
 # The audio compiler maps these to provider syntax; subtitles strip them.
 CUE_TAGS: frozenset[str] = frozenset(
-    {"pause", "long pause", "laugh", "chuckle", "sigh", "gasp", "whisper", "clears throat", "sobs", "scoff"}
+    {"pause", "long pause", "laugh", "chuckle", "sigh", "gasp", "whisper", "clears throat", "sobs", "scoff",
+     "nervous laugh", "inhales", "exhales", "groans", "sniffs", "shaky breath", "muttering"}
 )
 _TAG_RE = re.compile(r"\[([^\[\]]{1,24})\]")
 _EMPH_RE = re.compile(r"\*([^*]+)\*")

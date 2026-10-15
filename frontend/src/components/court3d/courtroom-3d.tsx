@@ -12,7 +12,7 @@ import type { CharacterInfo, Reaction } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { PaperRain } from "./paper-rain";
 import { CourtroomSet } from "./set";
-import { Standee } from "./standee";
+import { FIGURE_SCALE, Figure } from "./figure";
 
 type Seat = "judge" | "witness" | "defendant" | "prosecutor" | "defense";
 type V3 = [number, number, number];
@@ -27,15 +27,26 @@ const SEATS: Record<Seat, { pos: V3; h: number; rotY: number }> = {
 
 interface Shot { pos: V3; look: V3; fov: number }
 
+/** Where a 3D figure stands (feet), per seat. Devices in the witness box stand on a stool so they clear the rail. */
+function figurePos(seat: Seat, human: boolean): V3 {
+  switch (seat) {
+    case "judge": return [0, 0.75, -5.2];
+    case "witness": return [4.2, human ? 0.5 : 0.75, -3.95];
+    case "defendant": return [0, 0.32, 0.5];
+    case "prosecutor": return [-3.7, 0, 1.6];
+    case "defense": return [3.7, 0, 1.6];
+  }
+}
+
 // The camera director's shot list. Each speaker gets a composed medium shot.
 const SHOTS: Record<Seat | "wide" | "verdict" | "objection", Shot> = {
   wide: { pos: [0, 3.2, 10.2], look: [0, 2.0, -2.2], fov: 46 },
-  judge: { pos: [0, 3.0, 1.2], look: [0, 2.5, -5.1], fov: 42 },
-  witness: { pos: [2.7, 2.35, 2.0], look: [4.2, 1.7, -3.9], fov: 40 },
-  defendant: { pos: [0, 1.75, 5.9], look: [0, 1.25, 0.5], fov: 40 },
-  prosecutor: { pos: [-2.6, 1.95, 6.8], look: [-3.7, 1.55, 1.55], fov: 40 },
-  defense: { pos: [2.6, 1.95, 6.8], look: [3.7, 1.55, 1.55], fov: 40 },
-  verdict: { pos: [0, 3.75, -1.7], look: [0, 3.0, -5.1], fov: 34 },
+  judge: { pos: [0, 3.35, -1.1], look: [0, 3.0, -5.2], fov: 32 },
+  witness: { pos: [2.6, 2.55, 0.4], look: [4.2, 2.15, -3.95], fov: 32 },
+  defendant: { pos: [0, 1.75, 4.1], look: [0, 1.35, 0.5], fov: 34 },
+  prosecutor: { pos: [-2.6, 2.35, 4.9], look: [-3.7, 2.0, 1.6], fov: 32 },
+  defense: { pos: [2.6, 2.35, 4.9], look: [3.7, 2.0, 1.6], fov: 32 },
+  verdict: { pos: [0, 3.5, -2.4], look: [0, 3.05, -5.2], fov: 30 },
   objection: { pos: [0, 2.3, 6.6], look: [0, 1.8, -1], fov: 52 },
 };
 
@@ -165,6 +176,14 @@ function Scene({ characters, speaker, emotion, reactions = {}, amplitude = null,
     .map((c) => ({ c, seat: seatOf(c, witness) }))
     .filter((p): p is { c: CharacterInfo; seat: Seat } => p.seat !== null);
   const active = placed.find((p) => p.c.key === speaker)?.seat ?? null;
+  const speakerChar = placed.find((p) => p.c.key === speaker);
+  const speakerHead: V3 | null = speakerChar
+    ? (() => {
+        const human = speakerChar.c.visual?.kind === "human" || ["judge", "prosecutor", "defense", "reporter"].includes(speakerChar.c.key);
+        const fp = figurePos(speakerChar.seat, human);
+        return [fp[0], fp[1] + (human ? 1.69 : 0.85) * FIGURE_SCALE, fp[2]];
+      })()
+    : null;
   return (
     <>
       <color attach="background" args={["#070606"]} />
@@ -174,20 +193,19 @@ function Scene({ characters, speaker, emotion, reactions = {}, amplitude = null,
       <CourtroomSet reflections={reflections} gavel={gavel} />
       <PaperRain active={celebrate} />
       {placed.map(({ c, seat }, i) => {
-        const s = SEATS[seat];
+        const human = c.visual?.kind === "human" || ["judge", "prosecutor", "defense", "reporter"].includes(c.key);
+        const pos = figurePos(seat, human);
         return (
-          <Standee
+          <Figure
             key={c.key}
             character={c}
-            position={s.pos}
-            height={s.h}
-            rotationY={s.rotY}
+            position={pos}
             speaking={speaker === c.key}
             emotion={speaker === c.key ? emotion : undefined}
             reaction={reactions[c.key] ?? null}
             dimmed={!!speaker && speaker !== c.key && !!active}
             amplitude={speaker === c.key ? amplitude : null}
-            base={seat === "defendant"}
+            lookAt={speakerHead}
             plate={seat === "defendant" ? "The Defendant" : undefined}
             seed={i}
           />

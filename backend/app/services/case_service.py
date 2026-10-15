@@ -94,7 +94,8 @@ async def save_trial(session: AsyncSession, case: Case, plan: CasePlan, script: 
         session.add(VoiceAssignment(character_id=ch.id, provider=case.audio_provider, voice_id=v.fish_voice_id,
                                     voice_label=v.label, base_direction=v.base_direction,
                                     mock_params={"f0": v.mock.f0, "speed": v.mock.speed, "brightness": v.mock.brightness,
-                                                 "breath": v.mock.breath, "wobble": v.mock.wobble, "shape": v.mock.shape}))
+                                                 "breath": v.mock.breath, "wobble": v.mock.wobble, "shape": v.mock.shape,
+                                                 "pace": c.voice.pace}))
     for e in plan.evidence:
         session.add(EvidenceItem(case_id=case.id, exhibit=e.id, title=e.title, spec=e.model_dump(mode="json")))
 
