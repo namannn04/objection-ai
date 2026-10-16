@@ -19,13 +19,12 @@ from app.models import Case
 from app.services import case_service as cs
 from app.services.pipeline import _synthesize, all_rows, prepare_case
 from app.services.settings_service import provider_status
-from app.showcase import javascript
+from app.showcase import javascript, monday
 
 log = logging.getLogger("seed")
 
 CURATED = [
     {"defendant": "The office Wi-Fi", "accusation": "disappearing during every important meeting", "trial_length": "quick"},
-    {"defendant": "Monday mornings", "accusation": "crimes against humanity, fifty-two times a year", "trial_length": "quick"},
     {"defendant": "My alarm clock", "accusation": "destroying my dreams every single morning", "trial_length": "quick"},
     {"defendant": "My friend who is always five minutes away", "accusation": "saying 'I'm on my way' from the shower", "trial_length": "quick"},
 ]
@@ -42,24 +41,37 @@ async def best_free_voice() -> str:
     return "fish-free" if status["audio"]["fish-free"]["available"] else "mock"
 
 
-async def seed_showcase() -> str:
+async def seed_authored(module, *, showcase: bool) -> str:
+    """Sync a hand-authored case (plan + script live in app/showcase/*.py) and record it with free voices."""
     async with session_factory()() as s:
-        case = (await s.execute(select(Case).where(Case.slug == javascript.CASE_FIELDS["slug"]))).scalar_one_or_none()
+        case = (await s.execute(select(Case).where(Case.slug == module.CASE_FIELDS["slug"]))).scalar_one_or_none()
         if case and case.status == Phase.COURTROOM_READY.value:
             cv = await cs.current_version(s, case)
-            if cv and cv.script == javascript.SCRIPT.model_dump(mode="json"):
-                log.info("showcase already present: %s", case.slug)
+            plan = module.PLAN.model_dump(mode="json")
+            if cv and cv.script == module.SCRIPT.model_dump(mode="json"):
+                if cv.plan != plan:
+                    # Same lines: refresh looks and bios in place, keep every recording (incl. paid Drama 3 audio).
+                    cv.plan = plan
+                    case = await cs.load_case(s, case.id)
+                    for ch in case.characters:
+                        spec = module.PLAN.character(ch.key)
+                        if spec:
+                            ch.name, ch.spec = spec.name, spec.model_dump(mode="json")
+                    await s.commit()
+                    log.info("refreshed cast details for %s (audio kept)", case.slug)
+                else:
+                    log.info("hand-authored case already present: %s", case.slug)
                 return case.id
-            log.info("showcase script changed; re-syncing %s", case.slug)
+            log.info("hand-authored script changed; re-syncing %s", case.slug)
             cs.advance(case, Phase.AUDIO_PREPARATION)
-        report = validate_script(javascript.PLAN, javascript.SCRIPT)
+        report = validate_script(module.PLAN, module.SCRIPT)
         if not report.valid:
-            raise SystemExit(f"showcase script invalid: {report.errors}")
+            raise SystemExit(f"{module.CASE_FIELDS['slug']} script invalid: {report.errors}")
         if not case:
-            f = javascript.CASE_FIELDS
+            f = module.CASE_FIELDS
             case = Case(slug=f["slug"], defendant=f["defendant"], accusation=f["accusation"], context=f["context"],
                         comedy_intensity=f["comedy_intensity"], drama_level=f["drama_level"], trial_length=f["trial_length"],
-                        participation_mode=f["participation_mode"], case_number=f["case_number"], is_showcase=True,
+                        participation_mode=f["participation_mode"], case_number=f["case_number"], is_showcase=showcase,
                         is_featured=True, llm_provider="hand-authored", audio_provider=await best_free_voice(),
                         status=Phase.CASE_CREATED.value)
             s.add(case)
@@ -67,15 +79,29 @@ async def seed_showcase() -> str:
         for target in (Phase.CASE_PREPARATION, Phase.SCRIPT_PLANNING, Phase.SCRIPT_VALIDATION):
             if case.status != target.value and Phase(case.status) != Phase.AUDIO_PREPARATION:
                 cs.advance(case, target)
-        await cs.save_trial(s, case, javascript.PLAN, javascript.SCRIPT, humor=[], validation=report.model_dump(),
+        await cs.save_trial(s, case, module.PLAN, module.SCRIPT, humor=[], validation=report.model_dump(),
                             generator="hand-authored")
         if case.status == Phase.SCRIPT_VALIDATION.value:
             cs.advance(case, Phase.AUDIO_PREPARATION, script_valid=True)
         await s.commit()
         case = await cs.load_case(s, case.id)
         out = await _synthesize(s, case, _noop, await best_free_voice())
-        log.info("showcase audio: %s", {k: out[k] for k in ("total", "synthesized", "cached")})
+        log.info("%s audio: %s", case.slug, {k: out[k] for k in ("total", "synthesized", "cached")})
         return case.id
+
+
+async def seed_showcase() -> str:
+    return await seed_authored(javascript, showcase=True)
+
+
+async def seed_specials() -> None:
+    from sqlalchemy import update
+
+    await seed_authored(monday, showcase=False)
+    # The hand-authored special replaces the old generated Monday case on the front page (it stays in the docket).
+    async with session_factory()() as s:
+        await s.execute(update(Case).where(Case.defendant == "Monday mornings").values(is_featured=False))
+        await s.commit()
 
 
 async def seed_curated() -> None:
@@ -139,8 +165,8 @@ async def recast_all() -> None:
         async with session_factory()() as s:
             case = await cs.load_case(s, case_id)
             cv = await cs.current_version(s, case) if case else None
-            if not case or not cv:
-                continue
+            if not case or not cv or case.audio_provider == "drama3":
+                continue  # never downgrade a paid Drama 3 recording to free voices
             plan = CasePlan.model_validate(cv.plan)
             choices = cast(plan.characters)
             specs = {c.key: c for c in plan.characters}
@@ -164,10 +190,12 @@ async def recast_all() -> None:
 async def main(showcase_only: bool, recast: bool = False) -> None:
     if recast:
         await seed_showcase()
+        await seed_specials()
         await recast_all()
         return
     await seed_showcase()
     if not showcase_only:
+        await seed_specials()
         await seed_curated()
     await revoice()
 

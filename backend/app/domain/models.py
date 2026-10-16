@@ -96,6 +96,9 @@ class VoiceSpec(BaseModel):
     description: str = Field(description="How the voice sounds, in a sentence")
     pitch: Literal["low", "mid", "high"] = "mid"
     pace: Literal["slow", "measured", "fast"] = "measured"
+    fish_voice: str | None = Field(default=None, pattern=r"^[0-9a-f]{32}$",
+                                   description="Hand-cast public Fish voice id; overrides the default casting")
+    fish_label: str = Field(default="", max_length=60)
 
 
 class VisualSpec(BaseModel):
@@ -103,6 +106,11 @@ class VisualSpec(BaseModel):
     glyph: str = Field(default="", max_length=6, description="Short mark on an object/concept face, e.g. 'JS'")
     palette: Literal["gold", "burgundy", "ivory", "teal", "violet", "ember", "slate", "moss"] = "slate"
     accessory: Literal["wig", "glasses", "tie", "bowtie", "headset", "monocle", "none"] = "none"
+    hair: Literal["crop", "bob", "quiff", "ponytail", "bun", "balding"] | None = Field(
+        default=None, description="Human hairstyle; when set, accessory is used literally (no default tie)")
+    mustache: bool = False
+    attire: Literal["suit", "saree"] = "suit"
+    bindi: bool = False
 
 
 class CharacterSpec(BaseModel):

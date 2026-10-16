@@ -92,9 +92,14 @@ function ReactionChip({ reaction, y }: { reaction?: Reaction | null; y: number }
 
 function Human(props: FigureProps) {
   const { character, position, dimmed, lookAt, reaction, seed = 0 } = props;
-  const look = LOOKS[character.key] ?? { skin: "#c99a78", skinShade: "#946649", hair: "#2a1d16", hairStyle: "crop", suit: character.visual?.palette ?? "slate", accessory: "tie" };
+  const v = character.visual;
+  const look = LOOKS[character.key] ?? (v?.hair
+    ? { skin: "#c08a64", skinShade: "#8a5b3d", hair: v.hair === "balding" ? "#3a3530" : "#1c1410", hairStyle: v.hair,
+        suit: v.palette ?? "slate", accessory: v.accessory ?? "none" }
+    : { skin: "#c99a78", skinShade: "#946649", hair: "#2a1d16", hairStyle: "crop", suit: v?.palette ?? "slate", accessory: "tie" });
   const suitCol = look.suit.startsWith("#") ? look.suit : palette(look.suit).base;
   const judge = character.key === "judge";
+  const saree = v?.attire === "saree";
   const { expression, tick } = useLife(props);
   const face = FACE[expression];
 
@@ -119,6 +124,8 @@ function Human(props: FigureProps) {
     pupil: new THREE.MeshStandardMaterial({ color: "#1a1210", roughness: 0.2 }),
     mouth: new THREE.MeshBasicMaterial({ color: "#2b1215" }),
     brow: new THREE.MeshStandardMaterial({ color: judge ? "#d9d2c4" : look.hair, roughness: 0.8 }),
+    pallu: new THREE.MeshStandardMaterial({ color: "#8e1f3a", roughness: 0.55, metalness: 0.08 }),
+    bindi: new THREE.MeshBasicMaterial({ color: "#c0122a" }),
   }), [look.skin, look.skinShade, look.hair, suitCol, judge]);
 
   useFrame(({ clock }, dt) => {
@@ -175,11 +182,23 @@ function Human(props: FigureProps) {
         <mesh position={[0, 1.4, 0]} rotation={[0, 0, Math.PI / 2]} scale={[1, 1, 0.7]} material={judge ? mats.suitDark : mats.suit} castShadow>
           <capsuleGeometry args={[0.1, 0.34, 6, 12]} />
         </mesh>
-        {/* shirt V + lapels */}
-        <mesh position={[0, 1.36, 0.118]} rotation={[-0.12, 0, Math.PI]} material={mats.shirt}>
-          <coneGeometry args={[0.07, 0.24, 3]} />
-        </mesh>
-        {judge ? (
+        {saree ? (
+          <>
+            {/* pallu: draped over the left shoulder and across the chest, gold border */}
+            <mesh position={[0.015, 1.2, 0.128]} rotation={[-0.08, 0, 0.55]} material={mats.pallu}><boxGeometry args={[0.15, 0.62, 0.02]} /></mesh>
+            <mesh position={[0.068, 1.215, 0.136]} rotation={[-0.08, 0, 0.55]} material={mats.gold}><boxGeometry args={[0.018, 0.6, 0.01]} /></mesh>
+            <mesh position={[-0.2, 1.4, 0.0]} rotation={[0, 0, -0.3]} scale={[1, 1, 0.9]} material={mats.pallu}><capsuleGeometry args={[0.07, 0.12, 4, 10]} /></mesh>
+            {/* skirt flare */}
+            <mesh position={[0, 0.86, 0]} scale={[1, 1, 0.75]} material={mats.suit} castShadow><cylinderGeometry args={[0.2, 0.27, 0.36, 20]} /></mesh>
+            <mesh position={[0, 0.69, 0]} scale={[1, 1, 0.75]} material={mats.gold}><cylinderGeometry args={[0.272, 0.272, 0.025, 20]} /></mesh>
+          </>
+        ) : (
+          /* shirt V + lapels */
+          <mesh position={[0, 1.36, 0.118]} rotation={[-0.12, 0, Math.PI]} material={mats.shirt}>
+            <coneGeometry args={[0.07, 0.24, 3]} />
+          </mesh>
+        )}
+        {saree ? null : judge ? (
           <mesh position={[0, 1.44, 0.03]} rotation={[Math.PI / 2, 0, 0]} material={mats.gold}>
             <torusGeometry args={[0.12, 0.022, 8, 24]} />
           </mesh>
@@ -236,6 +255,17 @@ function Human(props: FigureProps) {
         {/* mouth: an ellipse that opens with the voice */}
         <mesh ref={mouth} position={[0, -0.065, 0.118]} material={mats.mouth}><circleGeometry args={[0.03, 20]} /></mesh>
         <Hair style={look.hairStyle} mat={mats.hair} />
+        {v?.bindi && (
+          <mesh position={[0, 0.06, 0.128]} material={mats.bindi}><circleGeometry args={[0.009, 16]} /></mesh>
+        )}
+        {saree && [-1, 1].map((sx) => (
+          <mesh key={sx} position={[sx * 0.128, -0.045, 0.01]} material={mats.gold}><sphereGeometry args={[0.014, 10, 8]} /></mesh>
+        ))}
+        {v?.mustache && (
+          <mesh position={[0, -0.04, 0.122]} rotation={[0.15, 0, 0]} scale={[1, 0.32, 0.45]} material={mats.hair}>
+            <sphereGeometry args={[0.042, 16, 10]} />
+          </mesh>
+        )}
         {look.accessory === "glasses" && (
           <group position={[0, 0.022, 0.13]}>
             {[-1, 1].map((sx) => (
@@ -287,6 +317,32 @@ function Hair({ style, mat }: { style: string; mat: THREE.Material }) {
       <group>
         <mesh position={[0, 0.045, -0.01]} scale={[1.04, 0.8, 1.05]} material={mat}><sphereGeometry args={[0.135, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2.1]} /></mesh>
         <mesh position={[0.02, 0.13, 0.07]} rotation={[0.6, 0, -0.2]} scale={[1.3, 0.7, 1]} material={mat}><sphereGeometry args={[0.06, 14, 10]} /></mesh>
+      </group>
+    );
+  }
+  if (style === "bun") {
+    // centre parting, hair swept over the ears, a low bun at the back
+    return (
+      <group>
+        {[-1, 1].map((sx) => (
+          <group key={sx}>
+            <mesh position={[sx * 0.045, 0.06, 0]} rotation={[0, 0, sx * -0.5]} scale={[1, 0.62, 1.05]} material={mat}>
+              <sphereGeometry args={[0.105, 20, 14, 0, Math.PI * 2, 0, Math.PI / 2]} />
+            </mesh>
+            <mesh position={[sx * 0.118, -0.005, -0.005]} scale={[0.42, 0.95, 0.95]} material={mat}><sphereGeometry args={[0.085, 14, 10]} /></mesh>
+          </group>
+        ))}
+        <mesh position={[0, 0.03, -0.06]} scale={[1.05, 0.95, 0.75]} material={mat}><sphereGeometry args={[0.13, 20, 14]} /></mesh>
+        <mesh position={[0, -0.03, -0.155]} material={mat}><sphereGeometry args={[0.07, 16, 12]} /></mesh>
+      </group>
+    );
+  }
+  if (style === "balding") {
+    return (
+      <group>
+        <mesh position={[-0.118, 0.0, -0.02]} scale={[0.45, 0.9, 1.1]} material={mat}><sphereGeometry args={[0.08, 14, 10]} /></mesh>
+        <mesh position={[0.118, 0.0, -0.02]} scale={[0.45, 0.9, 1.1]} material={mat}><sphereGeometry args={[0.08, 14, 10]} /></mesh>
+        <mesh position={[0, 0.0, -0.1]} scale={[1.3, 0.8, 0.6]} material={mat}><sphereGeometry args={[0.08, 14, 10]} /></mesh>
       </group>
     );
   }

@@ -176,3 +176,21 @@ def test_scene_split_by_silence(tmp_path):
     # Not enough gaps → proportional cuts, never a re-request.
     cuts, how = cut_points([], 3, 9000, [10, 20, 30])
     assert how == "proportional" and cuts == [1500, 4500]
+
+
+def test_word_timings_never_show_provider_markup():
+    from app.services.audio_generation import estimate_word_timings
+
+    words = [w["w"] for w in estimate_word_timings("[stern, slow] Uphill. <emphasis>Both ways</emphasis>. <|speaker:1|>Hi", 4000)]
+    assert words == ["Uphill.", "Both", "ways.", "Hi"]
+
+
+def test_hand_authored_specials_validate_and_cast_their_own_voices():
+    from app.audio.voices import cast
+    from app.domain.validation import validate_script
+    from app.showcase import monday
+
+    assert validate_script(monday.PLAN, monday.SCRIPT).valid
+    voices = cast(monday.PLAN.characters)
+    assert voices["judge"].fish_voice_id == monday.PLAN.character("judge").voice.fish_voice
+    assert len({v.fish_voice_id for v in voices.values()}) == len(voices)  # everyone sounds different

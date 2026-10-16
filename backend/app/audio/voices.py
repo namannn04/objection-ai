@@ -26,6 +26,8 @@ FISH_PUBLIC = {
     "robot": "175d7d5358b644d2ad2e8b7e4e13ece3",  # male, deep, calm, robotic
     "dramatic_male": "7a18a1851d2649108c48ec9f2c80eb2c",  # male, old, dramatic character
     "friendly_woman": "57d4a7fa3d944ca5b2407f916ce5f4d5",  # female, middle-aged, friendly
+    "old_man": "00731df901a74de5b9b000713f14718c",  # male, old, deep, raspy, lived-in
+    "man_mae": "48b83695ea7f4b2d8ebcd63a0775a3bd",  # male, middle-aged, calm, conversational, smooth
 }
 
 # Optional local overrides: backend/voices.json {"judge": "<fish voice id>", "witness_1": "...", ...}
@@ -41,13 +43,13 @@ class VoiceChoice:
 
 
 _ENSEMBLE: dict[str, VoiceChoice] = {
-    "judge": VoiceChoice(FISH_PUBLIC["brian_british"], "Brian British (old, dignified)",
+    "judge": VoiceChoice(FISH_PUBLIC["old_man"], "Old Man (deep, raspy, lived-in)",
                          "deep, authoritative, restrained; long weighty pauses",
                          MockVoice(f0=98, speed=4.6, brightness=0.35, breath=0.03, wobble=0.012, shape="reed")),
     "prosecutor": VoiceChoice(FISH_PUBLIC["delia"], "Delia (bright, assertive)",
                               "fast, dramatic, assertive, theatrical",
                               MockVoice(f0=215, speed=7.4, brightness=0.75, breath=0.04, wobble=0.025, shape="square")),
-    "defense": VoiceChoice(FISH_PUBLIC["deep_smooth"], "Deep (smooth)",
+    "defense": VoiceChoice(FISH_PUBLIC["man_mae"], "Mae (calm, conversational)",
                            "smooth, sarcastic, unhurried, confident",
                            MockVoice(f0=132, speed=5.6, brightness=0.5, breath=0.05, wobble=0.02, shape="round")),
     "reporter": VoiceChoice(FISH_PUBLIC["sarah"], "Sarah (soft narrator)",
@@ -89,6 +91,9 @@ def cast(characters: list[CharacterSpec]) -> dict[str, VoiceChoice]:
             mv = MockVoice(f0=mv.f0 * _PITCH.get(c.voice.pitch, 1.0), speed=mv.speed, brightness=mv.brightness,
                            breath=mv.breath, wobble=mv.wobble, shape=mv.shape)
             choice = VoiceChoice(vid, label, c.voice.description.rstrip(".").lower(), mv)
+        if c.voice.fish_voice:
+            choice = VoiceChoice(c.voice.fish_voice, c.voice.fish_label or c.name,
+                                 c.voice.description.rstrip(".").lower(), choice.mock)
         if c.key in ov:
             choice = VoiceChoice(ov[c.key], f"override:{c.key}", choice.base_direction, choice.mock)
         out[c.key] = choice

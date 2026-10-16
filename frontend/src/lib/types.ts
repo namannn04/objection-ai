@@ -36,6 +36,10 @@ export interface Visual {
   glyph: string;
   palette: string;
   accessory: string;
+  hair?: string | null;
+  mustache?: boolean;
+  attire?: "suit" | "saree";
+  bindi?: boolean;
 }
 
 export interface CharacterInfo {

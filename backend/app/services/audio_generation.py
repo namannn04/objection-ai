@@ -66,6 +66,7 @@ def estimate_word_timings(text: str, duration_ms: int) -> list[dict]:
     """Distribute words across the *measured* duration by syllable weight.
     Used only when the provider does not return alignment."""
     tokens: list[tuple[str | None, float]] = []
+    text = re.sub(r"<\|?[^<>]*\|?>", "", text)  # provider markup (<emphasis>, <|speaker:0|>) is never shown
     for part in re.split(r"(\[[^\]]+\])", text):
         m = _CUE.fullmatch(part.strip()) if part.strip() else None
         if m:
