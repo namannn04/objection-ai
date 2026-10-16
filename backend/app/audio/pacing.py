@@ -22,9 +22,9 @@ SR = 44100
 HOP = SR // 100  # 10 ms analysis frames
 
 LEAD_MS, TAIL_MS = 60, 140  # silence kept before the first / after the last sound
-KEEP_MS = 170  # gaps up to this length are natural breaths: untouched
-MAX_GAP_MS = 400  # even a [long pause] never leaves more dead air than this
-SQUEEZE = 0.25  # share of the gap beyond KEEP_MS that survives
+KEEP_MS = 150  # gaps up to this length are natural breaths: untouched
+MAX_GAP_MS = 340  # even a [long pause] never leaves more dead air than this
+SQUEEZE = 0.2  # share of the gap beyond KEEP_MS that survives
 FADE = SR // 200  # 5 ms fades at every cut: no clicks
 
 
