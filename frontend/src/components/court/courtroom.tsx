@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { FolderOpen, X } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StageSwitch, useStageMode } from "@/components/court3d/stage-switch";
 import type { Mode } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -31,7 +31,37 @@ export function Courtroom({ caseRef, mode }: { caseRef: string; mode: Mode }) {
   const verdictStamp = usePlayer((s) => s.verdictStamp);
   const [stageMode, setStageMode, can3d] = useStageMode();
   const [drawer, setDrawer] = useState(false);
-  useCourtKeys(c.togglePause, c.jumpLine);
+  // Full screen shows only the courtroom; the controls fade away while the mouse rests.
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [full, setFull] = useState(false);
+  const [idle, setIdle] = useState(false);
+  const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toggleFull = useCallback(() => {
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else void stageRef.current?.requestFullscreen?.().catch(() => undefined);
+  }, []);
+  const wake = useCallback(() => {
+    setIdle(false);
+    if (idleTimer.current) clearTimeout(idleTimer.current);
+    idleTimer.current = setTimeout(() => setIdle(true), 2200);
+  }, []);
+  useEffect(() => {
+    const onChange = () => {
+      const on = !!stageRef.current && document.fullscreenElement === stageRef.current;
+      setFull(on);
+      if (on) {
+        setDrawer(false);
+        wake();
+      }
+    };
+    document.addEventListener("fullscreenchange", onChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", onChange);
+      if (idleTimer.current) clearTimeout(idleTimer.current);
+    };
+  }, [wake]);
+  const hideChrome = full && idle;
+  useCourtKeys(c.togglePause, c.jumpLine, toggleFull);
   const [startedAt, setStartedAt] = useState(() => Date.now());
 
   const scene = manifest?.scenes.find((s) => s.key === sceneKey);
@@ -84,7 +114,15 @@ export function Courtroom({ caseRef, mode }: { caseRef: string; mode: Mode }) {
       </header>
 
       {/* the stage: everything happens in here */}
-      <div className="relative overflow-hidden rounded-[22px] border hairline bg-black shadow-[0_50px_140px_-50px_rgba(0,0,0,1)]">
+      <div
+        ref={stageRef}
+        onMouseMove={full ? wake : undefined}
+        className={cn(
+          "relative overflow-hidden bg-black",
+          full ? "grid place-items-center" : "rounded-[22px] border hairline shadow-[0_50px_140px_-50px_rgba(0,0,0,1)]",
+          hideChrome && "cursor-none",
+        )}
+      >
         <StageSwitch
           mode={stageMode}
           burst={burst}
@@ -98,7 +136,7 @@ export function Courtroom({ caseRef, mode }: { caseRef: string; mode: Mode }) {
           reactions={reactions}
           amplitude={c.amplitude}
           witnessKey={witnessKey}
-          className="rounded-none border-0"
+          className={cn("rounded-none border-0", full && "max-h-screen max-w-[calc(100vh*16/9)]")}
           live={status === "playing"}
         >
           <SceneTitleCard />
@@ -107,10 +145,11 @@ export function Courtroom({ caseRef, mode }: { caseRef: string; mode: Mode }) {
           <VerdictReveal verdict={session?.verdict ?? null} />
           <StageCaptions characters={manifest.characters} hidden={showWindow} />
           <WaitingNote />
-          <SceneProgress />
+          {!full && <SceneProgress />}
 
           {!ready && (
-            <div className="absolute right-[2%] top-[3%] z-[14] flex items-center gap-2">
+            <div className={cn("absolute right-[2%] top-[3%] z-[14] flex items-center gap-2 transition-opacity duration-500",
+              hideChrome && "pointer-events-none opacity-0 [&_*]:pointer-events-none")}>
               <button
                 onClick={() => setDrawer((v) => !v)}
                 className="pointer-events-auto flex items-center gap-2 rounded-full border border-white/10 bg-ink/55 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] text-ivory/85 backdrop-blur-md transition-colors hover:text-ivory"
@@ -118,7 +157,7 @@ export function Courtroom({ caseRef, mode }: { caseRef: string; mode: Mode }) {
               >
                 <FolderOpen className="h-3.5 w-3.5" /> Case file
               </button>
-              <StageControls onToggle={c.togglePause} onJump={c.jumpLine} onVolume={c.setVolume} />
+              <StageControls onToggle={c.togglePause} onJump={c.jumpLine} onVolume={c.setVolume} onFullscreen={toggleFull} fullscreen={full} />
             </div>
           )}
 
@@ -171,7 +210,7 @@ export function Courtroom({ caseRef, mode }: { caseRef: string; mode: Mode }) {
                   >
                     {status === "loading" ? `Preparing… ${loaded}/${toLoad}` : "All rise"}
                   </button>
-                  <p className="mt-4 text-xs text-mute">Sound on · Space pause · ← → skip lines · R replay</p>
+                  <p className="mt-4 text-xs text-mute">Sound on · Space pause · ← → skip lines · F full screen · C captions</p>
                 </div>
               </motion.div>
             )}

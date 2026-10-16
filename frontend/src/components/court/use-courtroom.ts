@@ -156,7 +156,7 @@ export function useCourtroom(caseRef: string, mode: Mode) {
       const after = item ? pos - item.end : 0;
       let word = -1;
       if (seg?.audio) {
-        const ms = (pos - item!.start) * 1000;
+        const ms = (pos - item!.start) * 1000 + 60; // light up a hair early: reads as in sync
         const words = seg.audio.words;
         for (let w = 0; w < words.length; w++) if (words[w].s <= ms) word = w;
       }

@@ -311,7 +311,7 @@ function GalleryBenches({ mats }: { mats: ReturnType<typeof useMats> }) {
   );
 }
 
-export function CourtroomSet({ reflections = true, gavel = 0 }: { reflections?: boolean; gavel?: number }) {
+export function CourtroomSet({ reflections = true, gavel = 0, judgeName = "Hon. Judge" }: { reflections?: boolean; gavel?: number; judgeName?: string }) {
   const mats = useMats();
   const planks = useMemo(() => plankTexture(), []);
   const carpet = useMemo(() => carpetTexture(), []);
@@ -389,7 +389,7 @@ export function CourtroomSet({ reflections = true, gavel = 0 }: { reflections?: 
       {/* judge's platform + bench */}
       <Box args={[7.6, 0.7, 2.8]} position={[0, 0.35, -5.6]} material={mats.darkWood} />
       <Box args={[7.7, 0.05, 2.9]} position={[0, 0.72, -5.6]} material={mats.gold} cast={false} />
-      <Paneled w={5.8} h={1.35} d={0.55} position={[0, 0.7, -4.45]} label="Hon. A. Gravel" mats={mats} />
+      <Paneled w={5.8} h={1.35} d={0.55} position={[0, 0.7, -4.45]} label={judgeName} mats={mats} />
       <Gavel strikes={gavel} />
 
       {/* witness box */}

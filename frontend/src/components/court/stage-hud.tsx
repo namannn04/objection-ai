@@ -1,14 +1,14 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { Captions, CaptionsOff, Pause, Play, RotateCcw, Volume2, VolumeX } from "lucide-react";
+import { Captions, CaptionsOff, Maximize, Minimize, Pause, Play, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { useEffect } from "react";
 import type { CharacterInfo } from "@/lib/types";
 import { cn, ROLE_LABEL } from "@/lib/utils";
 import { usePlayer } from "@/stores/player";
 
-/** Keyboard: Space play/pause, ←/→ previous/next line, R replay line. */
-export function useCourtKeys(onToggle: () => void, onJump: (d: -1 | 0 | 1) => void) {
+/** Keyboard: Space play/pause, ←/→ previous/next line, R replay line, F fullscreen, C captions. */
+export function useCourtKeys(onToggle: () => void, onJump: (d: -1 | 0 | 1) => void, onFullscreen?: () => void) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.closest("input,textarea")) return;
@@ -19,15 +19,18 @@ export function useCourtKeys(onToggle: () => void, onJump: (d: -1 | 0 | 1) => vo
       if (e.key === "ArrowLeft") onJump(-1);
       if (e.key === "ArrowRight") onJump(1);
       if (e.key === "r" || e.key === "R") onJump(0);
+      if ((e.key === "f" || e.key === "F") && onFullscreen) onFullscreen();
+      if (e.key === "c" || e.key === "C") usePlayer.getState().set({ subtitles: !usePlayer.getState().subtitles });
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onToggle, onJump]);
+  }, [onToggle, onJump, onFullscreen]);
 }
 
 /** A small control pill in the corner of the stage — not a video player. */
-export function StageControls({ onToggle, onJump, onVolume }: {
+export function StageControls({ onToggle, onJump, onVolume, onFullscreen, fullscreen = false }: {
   onToggle: () => void; onJump: (d: -1 | 0 | 1) => void; onVolume: (v: number) => void;
+  onFullscreen?: () => void; fullscreen?: boolean;
 }) {
   const { status, volume, subtitles, set } = usePlayer();
   const playing = status === "playing";
@@ -50,9 +53,14 @@ export function StageControls({ onToggle, onJump, onVolume }: {
       <button className={btn} onClick={() => onVolume(volume ? 0 : 0.9)} aria-label={volume ? "Mute" : "Unmute"} title={volume ? "Mute" : "Unmute"}>
         {volume ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
       </button>
-      <button className={btn} onClick={() => set({ subtitles: !subtitles })} aria-label={subtitles ? "Hide captions" : "Show captions"} title="Captions">
+      <button className={btn} onClick={() => set({ subtitles: !subtitles })} aria-label={subtitles ? "Hide captions" : "Show captions"} title="Captions (C)">
         {subtitles ? <Captions className="h-3.5 w-3.5" /> : <CaptionsOff className="h-3.5 w-3.5" />}
       </button>
+      {onFullscreen && (
+        <button className={btn} onClick={onFullscreen} aria-label={fullscreen ? "Exit full screen" : "Full screen"} title={fullscreen ? "Exit full screen (F)" : "Full screen (F)"}>
+          {fullscreen ? <Minimize className="h-3.5 w-3.5" /> : <Maximize className="h-3.5 w-3.5" />}
+        </button>
+      )}
     </div>
   );
 }

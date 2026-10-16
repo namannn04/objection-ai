@@ -4,7 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { CharacterPortrait } from "@/components/characters/character-portrait";
 import type { AmplitudeSource } from "@/components/characters/face-parts";
 import type { CharacterInfo, Reaction } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { benchPlate, cn } from "@/lib/utils";
 
 type Seat = "judge" | "prosecutor" | "defense" | "defendant" | "witness" | "reporter";
 
@@ -69,7 +69,7 @@ export function CourtroomStage({
         />
 
         {/* Furniture behind the people */}
-        <Bench />
+        <Bench name={benchPlate(characters.find((c) => c.role === "judge")?.name)} />
         <WitnessBox />
 
         {placed.map(({ c, seat }, i) => {
@@ -167,13 +167,13 @@ function Backdrop() {
   );
 }
 
-function Bench() {
+function Bench({ name }: { name: string }) {
   return (
     <div className="absolute left-1/2 top-[40%] z-[3] h-[17%] w-[36%] -translate-x-1/2">
       <div className="absolute inset-0 rounded-t-md bg-[linear-gradient(180deg,#2a211b,#17120f)] shadow-[0_20px_40px_rgba(0,0,0,0.6)]" />
       <div className="absolute inset-x-0 top-0 h-[10%] rounded-t-md bg-gold/70" />
       <div className="absolute left-1/2 top-[38%] -translate-x-1/2 rounded-sm border border-gold/40 bg-ink/70 px-[4%] py-[1.5%] font-mono text-[clamp(5px,0.75vw,10px)] tracking-[0.25em] text-gold/80 whitespace-nowrap">
-        HON. A. GRAVEL
+        {name.toUpperCase()}
       </div>
     </div>
   );

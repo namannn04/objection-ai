@@ -9,7 +9,7 @@ import * as THREE from "three";
 import { CharacterPortrait } from "@/components/characters/character-portrait";
 import type { AmplitudeSource } from "@/components/characters/face-parts";
 import type { CharacterInfo, Reaction } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { benchPlate, cn } from "@/lib/utils";
 import { PaperRain } from "./paper-rain";
 import { CourtroomSet } from "./set";
 import { FIGURE_SCALE, Figure } from "./figure";
@@ -190,7 +190,7 @@ function Scene({ characters, speaker, emotion, reactions = {}, amplitude = null,
       <fog attach="fog" args={["#070606", 14, 32]} />
       <Lighting speakerSeat={active} />
       <Director speakerSeat={active} burst={burst} verdict={verdict} showcase={showcase} hero={minimal} />
-      <CourtroomSet reflections={reflections} gavel={gavel} />
+      <CourtroomSet reflections={reflections} gavel={gavel} judgeName={benchPlate(characters.find((c) => c.role === "judge")?.name)} />
       <PaperRain active={celebrate} />
       {placed.map(({ c, seat }, i) => {
         const human = c.visual?.kind === "human" || ["judge", "prosecutor", "defense", "reporter"].includes(c.key);

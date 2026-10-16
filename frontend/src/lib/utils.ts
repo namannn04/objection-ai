@@ -29,6 +29,14 @@ export const PHASE_LABEL: Record<string, string> = {
   FAILED: "Mistrial",
 };
 
+/** The judge's bench nameplate: "Justice K. K. Kaleshwar" → "Hon. K. K. Kaleshwar". */
+export function benchPlate(name?: string | null): string {
+  const parts = (name ?? "").replace(/^(the\s+)?(honou?rable|hon\.?|justice|judge|chief justice)\s+/i, "").split(/\s+/).filter(Boolean);
+  if (!parts.length) return "Hon. Judge";
+  const last = parts.pop()!;
+  return ["Hon.", ...parts.map((p) => (p.endsWith(".") ? p : `${p[0].toUpperCase()}.`)), last].join(" ");
+}
+
 export const ROLE_LABEL: Record<string, string> = {
   judge: "The Bench",
   prosecutor: "For the People",

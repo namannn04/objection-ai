@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import re
+import shutil
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -17,7 +18,7 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.audio import ffmpeg, mock_synth
+from app.audio import ffmpeg, mock_synth, pacing
 from app.audio.budget import BudgetGuard, estimate_cost, record
 from app.audio.compiler import CompiledRequest, compile_line
 from app.audio.mock_synth import MockVoice, syllables
@@ -44,7 +45,25 @@ def asset_path(cache_key: str, fmt: str = "mp3") -> Path:
 
 
 def asset_url(asset: AudioAsset) -> str:
-    return f"/media/audio/{asset.cache_key[:2]}/{asset.cache_key}.{asset.format}"
+    # ?v= changes whenever the file is re-paced, so browsers never replay a stale copy.
+    return f"/media/audio/{asset.cache_key[:2]}/{asset.cache_key}.{asset.format}?v={asset.size_bytes}"
+
+
+def raw_path(path: Path) -> Path:
+    """The provider's untouched recording, kept so pacing can always be redone from the original."""
+    s = get_settings()
+    return s.storage_dir / "audio_raw" / path.relative_to(s.audio_dir)
+
+
+def finalize_voice(path: Path, text: str) -> tuple[int, list[dict], str]:
+    """Shorten dead air in a recorded line and time its captions on the real speech."""
+    raw = raw_path(path)
+    if not raw.exists():
+        raw.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, raw)
+    y = pacing.tighten_file(raw, path)
+    words, source = pacing.caption_timings(text, y)
+    return ffmpeg.probe_duration_ms(path), words, source
 
 
 def ensure_sfx_fixtures() -> dict[str, Path]:
@@ -288,9 +307,10 @@ class AudioGenerationService:
             outs = [asset_path(k) for k in keys]
             pieces, method = await asyncio.to_thread(split_scene, full, outs, [len(t.text) for t in turns])
             for r, k, t, (path, dur) in zip(scene_rows, keys, turns, pieces, strict=True):
+                dur, words, source = await asyncio.to_thread(finalize_voice, path, t.text)
                 a = AudioAsset(cache_key=k, provider=self.provider.name, model=self.provider.model, path=str(path),
                                format="mp3", duration_ms=dur, size_bytes=path.stat().st_size, characters=len(t.text),
-                               timings={"words": estimate_word_timings(t.text, dur), "source": "estimated"},
+                               timings={"words": words, "source": source},
                                meta={"strategy": "scene", "split": method, "scene_request": req.cache_key})
                 session.add(a)
                 await session.flush()
@@ -323,6 +343,10 @@ class AudioGenerationService:
                 await asyncio.to_thread(ffmpeg.encode_pcm, result.audio, result.sample_rate, path, "mp3", "96k")
             else:
                 path.write_bytes(result.audio)
+            if self.provider.name != "mock" and not result.word_timings:
+                duration, timings, source = await asyncio.to_thread(finalize_voice, path, req.text)
+                if duration >= 150:
+                    return path, duration, timings, source
             duration = await asyncio.to_thread(ffmpeg.probe_duration_ms, path)
         except RuntimeError as exc:
             raise ProviderError(f"returned audio is not decodable: {exc}", uncertain=billable) from exc

@@ -61,13 +61,13 @@ def _s2_line(turn: DialogueTurn, base_direction: str = "") -> str:
     return f"[{direction}] {text}" if direction else text
 
 
-_PACE = {"slow": 0.9, "measured": 1.0, "fast": 1.1}
+_PACE = {"slow": 1.0, "measured": 1.08, "fast": 1.15}  # natural conversational pace, never rushed
 _EMOTION_PACE = {"angry": 0.06, "desperate": 0.08, "nervous": 0.07, "shocked": 0.04, "triumphant": 0.03,
                  "sad": -0.06, "deadpan": -0.03, "stern": -0.03, "whispering": -0.05}
 
 
 def speech_speed(pace: str, emotion: str) -> float:
-    return round(max(0.75, min(1.3, _PACE.get(pace, 1.0) + _EMOTION_PACE.get(emotion, 0.0))), 2)
+    return round(max(0.85, min(1.25, _PACE.get(pace, 1.0) + _EMOTION_PACE.get(emotion, 0.0))), 2)
 
 
 @dataclass(slots=True)

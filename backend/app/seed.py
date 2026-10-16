@@ -187,7 +187,34 @@ async def recast_all() -> None:
             log.info("re-cast %s: %s", case.slug, {k: out[k] for k in ("synthesized", "cached", "blocked", "failed")})
 
 
-async def main(showcase_only: bool, recast: bool = False) -> None:
+async def repace_all() -> None:
+    """Re-pace every real recording (shorter dead air) and re-time its captions, from the untouched originals.
+    Local processing only: no provider is called and nothing is billed."""
+    from pathlib import Path
+
+    from app.models import AudioAsset, DialogueTurnRow
+    from app.services.audio_generation import finalize_voice
+
+    async with session_factory()() as s:
+        pairs = (await s.execute(select(AudioAsset, DialogueTurnRow).join(
+            DialogueTurnRow, DialogueTurnRow.audio_asset_id == AudioAsset.id).where(
+            AudioAsset.provider.in_(["fish-free", "drama3"])))).all()
+        done: set[str] = set()
+        for asset, row in pairs:
+            if asset.id in done or not Path(asset.path).exists():
+                continue
+            done.add(asset.id)
+            dur, words, source = await asyncio.to_thread(finalize_voice, Path(asset.path), row.data["text"])
+            asset.duration_ms, asset.size_bytes = dur, Path(asset.path).stat().st_size
+            asset.timings = {"words": words, "source": source}
+        await s.commit()
+    log.info("re-paced %d recordings", len(done))
+
+
+async def main(showcase_only: bool, recast: bool = False, repace: bool = False) -> None:
+    if repace:
+        await repace_all()
+        return
     if recast:
         await seed_showcase()
         await seed_specials()
@@ -205,5 +232,6 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--showcase", action="store_true")
     p.add_argument("--recast", action="store_true", help="re-cast voices for every case and re-record")
+    p.add_argument("--repace", action="store_true", help="shorten dead air and re-time captions of existing recordings")
     a = p.parse_args()
-    asyncio.run(main(a.showcase, a.recast))
+    asyncio.run(main(a.showcase, a.recast, a.repace))
